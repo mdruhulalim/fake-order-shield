@@ -1,4 +1,4 @@
-/* Order Shield: hardware fingerprint that stays the same in every browser on one device.
+/* Fake Order Shield: hardware fingerprint that stays the same in every browser on one device.
  * Only signals that come from the device itself are used (screen, CPU cores, GPU maker,
  * time zone, OS, installed fonts) — nothing that changes between Chrome, Firefox, Edge, etc.
  * Result is stored in the "oshield_hw" cookie and checked against the block list. */

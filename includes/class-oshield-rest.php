@@ -75,7 +75,7 @@ class OShield_REST {
 	public static function bot_auth( $request ) {
 		$key = (string) oshield_opt( 'bot_api_key' );
 		if ( '' === $key ) {
-			return new WP_Error( 'oshield_disabled', __( 'The Order Shield API is disabled.', 'order-shield' ), array( 'status' => 403 ) );
+			return new WP_Error( 'oshield_disabled', __( 'The Fake Order Shield API is disabled.', 'order-shield' ), array( 'status' => 403 ) );
 		}
 		$given = (string) $request->get_header( 'x_api_key' );
 		if ( '' === $given ) {
@@ -150,7 +150,7 @@ class OShield_REST {
 		$payload = is_array( $payload ) ? $payload : array();
 
 		if ( 'GET' === $request->get_method() ) {
-			return new WP_REST_Response( array( 'status' => 'ok', 'message' => 'Order Shield webhook is ready.' ), 200 );
+			return new WP_REST_Response( array( 'status' => 'ok', 'message' => 'Fake Order Shield webhook is ready.' ), 200 );
 		}
 
 		if ( 'pathao' === $courier ) {

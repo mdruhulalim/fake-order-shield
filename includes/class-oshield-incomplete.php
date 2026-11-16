@@ -333,7 +333,7 @@ class OShield_Incomplete {
 		$order->set_payment_method( 'cod' );
 		$order->set_payment_method_title( __( 'Cash on delivery', 'order-shield' ) );
 		$order->calculate_totals();
-		$order->set_status( 'processing', __( 'Order Shield: created from an incomplete checkout.', 'order-shield' ) );
+		$order->set_status( 'processing', __( 'Fake Order Shield: created from an incomplete checkout.', 'order-shield' ) );
 		$order->save();
 
 		global $wpdb;

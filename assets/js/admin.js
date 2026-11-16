@@ -1,4 +1,4 @@
-/* Order Shield admin */
+/* Fake Order Shield admin */
 (function ($) {
 	'use strict';
 

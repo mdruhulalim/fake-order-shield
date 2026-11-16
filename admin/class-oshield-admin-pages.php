@@ -41,8 +41,8 @@ class OShield_Admin_Pages {
 
 		echo '<div class="wrap oshield-wrap">';
 		echo '<div class="oshield-topbar">';
-		echo '<a class="oshield-brand" href="' . esc_url( admin_url( 'admin.php?page=order-shield' ) ) . '"><span class="oshield-logo"><span class="dashicons dashicons-shield"></span></span><span class="oshield-brand-text"><strong>Order Shield</strong><small>v' . esc_html( OSHIELD_VERSION ) . '</small></span></a>';
-		echo '<nav class="oshield-pagenav" aria-label="' . esc_attr__( 'Order Shield pages', 'order-shield' ) . '">';
+		echo '<a class="oshield-brand" href="' . esc_url( admin_url( 'admin.php?page=order-shield' ) ) . '"><span class="oshield-logo"><span class="dashicons dashicons-shield"></span></span><span class="oshield-brand-text"><strong>Fake Order Shield</strong><small>v' . esc_html( OSHIELD_VERSION ) . '</small></span></a>';
+		echo '<nav class="oshield-pagenav" aria-label="' . esc_attr__( 'Fake Order Shield pages', 'order-shield' ) . '">';
 		foreach ( $pages as $slug => $p ) {
 			$is = $slug === $current;
 			echo '<a href="' . esc_url( admin_url( 'admin.php?page=' . $slug ) ) . '" class="' . ( $is ? 'is-current' : '' ) . '"' . ( $is ? ' aria-current="page"' : '' ) . '><span class="dashicons ' . esc_attr( $p[1] ) . '"></span><span>' . esc_html( $p[0] ) . '</span></a>';
@@ -818,7 +818,7 @@ class OShield_Admin_Pages {
 	public static function activity() {
 		$clear = wp_nonce_url( admin_url( 'admin.php?page=order-shield-activity&clear=1' ), 'oshield_clear_events' );
 		self::header( __( 'Activity Log', 'order-shield' ), '<a href="' . esc_url( $clear ) . '" class="page-title-action" onclick="return confirm(\'' . esc_js( __( 'Delete the whole activity log?', 'order-shield' ) ) . '\')">' . esc_html__( 'Clear log', 'order-shield' ) . '</a>' );
-		echo '<p>' . esc_html__( 'Every checkout attempt that Order Shield stopped or challenged. Entries older than 60 days are removed automatically.', 'order-shield' ) . '</p>';
+		echo '<p>' . esc_html__( 'Every checkout attempt that Fake Order Shield stopped or challenged. Entries older than 60 days are removed automatically.', 'order-shield' ) . '</p>';
 		$t = self::$table;
 		$t->prepare_items();
 		$t->views();
@@ -1134,7 +1134,7 @@ class OShield_Admin_Pages {
 					<p><?php esc_html_e( 'Clear saved fraud check and courier results so they are fetched fresh.', 'order-shield' ); ?></p></div></header>
 				<div class="oshield-section-body">
 					<p><a class="button" href="<?php echo $link( 'clear_cache' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>"><?php esc_html_e( 'Clear fraud check & courier caches', 'order-shield' ); ?></a></p>
-					<p class="oshield-muted"><?php echo esc_html( sprintf( /* translators: %s version */ __( 'Order Shield version %s', 'order-shield' ), OSHIELD_VERSION ) ); ?></p>
+					<p class="oshield-muted"><?php echo esc_html( sprintf( /* translators: %s version */ __( 'Fake Order Shield version %s', 'order-shield' ), OSHIELD_VERSION ) ); ?></p>
 				</div>
 			</section>
 		</div>

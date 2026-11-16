@@ -1,4 +1,4 @@
-/* Order Shield checkout: phone check, incomplete order capture & block popup. */
+/* Fake Order Shield checkout: phone check, incomplete order capture & block popup. */
 (function ($) {
 	'use strict';
 

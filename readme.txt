@@ -1,4 +1,4 @@
-=== Order Shield ===
+=== Fake Order Shield ===
 Contributors: brandingsolutionsbd
 Tags: woocommerce, fraud, fake order, live visitors, steadfast, pathao, bangladesh
 Requires at least: 5.8
@@ -6,7 +6,7 @@ Tested up to: 6.8
 Requires PHP: 7.4
 WC requires at least: 6.0
 WC tested up to: 10.2
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,12 +32,12 @@ Fake order protection for Bangladeshi WooCommerce stores.
 == Installation ==
 
 1. Upload the zip in Plugins → Add New → Upload Plugin, then activate.
-2. Open Order Shield → Settings and switch on what you need, tab by tab.
+2. Open Fake Order Shield → Settings and switch on what you need, tab by tab.
 3. For couriers, add your Steadfast / Pathao keys in Settings → Courier and paste the webhook URL into the courier panel.
 
 == Third-party services ==
 
-Order Shield only contacts outside services you switch on:
+Fake Order Shield only contacts outside services you switch on:
 * Steadfast (portal.packzy.com) and Pathao (api-hermes.pathao.com) — to create and track parcels.
 * proxycheck.io — only when VPN block or country restriction is on, to check the visitor's IP.
 * The courier-ratio API URL you enter on the Fraud Check tab, if any.
@@ -48,8 +48,11 @@ Session replay uses rrweb (MIT License), bundled in assets/vendor/rrweb.
 
 == Changelog ==
 
+= 1.3.1 =
+* Renamed to Fake Order Shield. Settings, data and page links are unchanged.
+
 = 1.3.0 =
-* New design for all Order Shield pages: top navigation bar, coloured stat cards, card-based panels.
+* New design for all Fake Order Shield pages: top navigation bar, coloured stat cards, card-based panels.
 * Dashboard: protection score, "needs attention" box for risky settings, grouped protection status.
 * Settings: side menu, one card per section, on/off switches, options hide when a feature is off.
 * Settings: "Recommended" value chips (one click), live warnings for risky values, unsaved-changes bar.

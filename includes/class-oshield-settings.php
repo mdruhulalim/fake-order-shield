@@ -69,7 +69,7 @@ class OShield_Settings {
 					array(
 						'title'  => __( 'Uninstall', 'order-shield' ),
 						'fields' => array(
-							array( 'id' => 'delete_on_uninstall', 'type' => 'checkbox', 'label' => __( 'Delete all data', 'order-shield' ), 'desc' => __( 'Remove Order Shield tables and settings when the plugin is deleted.', 'order-shield' ), 'default' => '0' ),
+							array( 'id' => 'delete_on_uninstall', 'type' => 'checkbox', 'label' => __( 'Delete all data', 'order-shield' ), 'desc' => __( 'Remove Fake Order Shield tables and settings when the plugin is deleted.', 'order-shield' ), 'default' => '0' ),
 						),
 					),
 				),
@@ -89,7 +89,7 @@ class OShield_Settings {
 					),
 					array(
 						'title'  => __( 'Block list', 'order-shield' ),
-						'desc'   => __( 'Blocked phone numbers, IP addresses, devices and emails cannot place orders. Manage them under Order Shield → Block List.', 'order-shield' ),
+						'desc'   => __( 'Blocked phone numbers, IP addresses, devices and emails cannot place orders. Manage them under Fake Order Shield → Block List.', 'order-shield' ),
 						'fields' => array(
 							array( 'id' => 'blocklist_enabled', 'type' => 'checkbox', 'master' => true, 'label' => __( 'Enforce block list', 'order-shield' ), 'desc' => __( 'Stop blocked customers at checkout.', 'order-shield' ), 'default' => '1' ),
 							array(

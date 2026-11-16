@@ -67,8 +67,8 @@ class OShield_Admin {
 		$cap = self::cap();
 		$p   = 'order-shield';
 
-		self::$hooks['dashboard'] = add_menu_page( __( 'Order Shield', 'order-shield' ), __( 'Order Shield', 'order-shield' ), $cap, $p, array( 'OShield_Admin_Pages', 'dashboard' ), 'dashicons-shield', 56 );
-		self::$hooks['dashboard'] = add_submenu_page( $p, __( 'Order Shield Dashboard', 'order-shield' ), __( 'Dashboard', 'order-shield' ), $cap, $p, array( 'OShield_Admin_Pages', 'dashboard' ) );
+		self::$hooks['dashboard'] = add_menu_page( __( 'Fake Order Shield', 'order-shield' ), __( 'Fake Order Shield', 'order-shield' ), $cap, $p, array( 'OShield_Admin_Pages', 'dashboard' ), 'dashicons-shield', 56 );
+		self::$hooks['dashboard'] = add_submenu_page( $p, __( 'Fake Order Shield Dashboard', 'order-shield' ), __( 'Dashboard', 'order-shield' ), $cap, $p, array( 'OShield_Admin_Pages', 'dashboard' ) );
 		self::$hooks['live']      = add_submenu_page( $p, __( 'Live Visitors', 'order-shield' ), __( 'Live Visitors', 'order-shield' ), $cap, $p . '-live', array( 'OShield_Admin_Pages', 'live' ) );
 		self::$hooks['search']    = add_submenu_page( $p, __( 'Fraud Check', 'order-shield' ), __( 'Fraud Check', 'order-shield' ), $cap, $p . '-search', array( 'OShield_Admin_Pages', 'search' ) );
 
@@ -77,7 +77,7 @@ class OShield_Admin {
 		self::$hooks['incomplete'] = add_submenu_page( $p, __( 'Incomplete Orders', 'order-shield' ), __( 'Incomplete Orders', 'order-shield' ) . $bubble, $cap, $p . '-incomplete', array( 'OShield_Admin_Pages', 'incomplete' ) );
 		self::$hooks['blocklist']  = add_submenu_page( $p, __( 'Block List', 'order-shield' ), __( 'Block List', 'order-shield' ), $cap, $p . '-blocklist', array( 'OShield_Admin_Pages', 'blocklist' ) );
 		self::$hooks['activity']   = add_submenu_page( $p, __( 'Activity Log', 'order-shield' ), __( 'Activity Log', 'order-shield' ), $cap, $p . '-activity', array( 'OShield_Admin_Pages', 'activity' ) );
-		self::$hooks['settings']   = add_submenu_page( $p, __( 'Order Shield Settings', 'order-shield' ), __( 'Settings', 'order-shield' ), 'manage_options', $p . '-settings', array( 'OShield_Admin_Pages', 'settings' ) );
+		self::$hooks['settings']   = add_submenu_page( $p, __( 'Fake Order Shield Settings', 'order-shield' ), __( 'Settings', 'order-shield' ), 'manage_options', $p . '-settings', array( 'OShield_Admin_Pages', 'settings' ) );
 
 		// List table screen options + row/bulk actions run before output.
 		foreach ( array( 'incomplete', 'blocklist', 'activity' ) as $k ) {
@@ -165,7 +165,7 @@ class OShield_Admin {
 			return;
 		}
 		if ( in_array( oshield_opt( 'fraud_source' ), array( 'api', 'both' ), true ) && '' === trim( (string) oshield_opt( 'fraud_api_url' ) ) ) {
-			echo '<div class="notice notice-warning"><p>' . wp_kses_post( __( '<strong>Order Shield:</strong> Fraud check is set to use a courier API, but no API URL is entered. Store history is used meanwhile.', 'order-shield' ) ) . '</p></div>';
+			echo '<div class="notice notice-warning"><p>' . wp_kses_post( __( '<strong>Fake Order Shield:</strong> Fraud check is set to use a courier API, but no API URL is entered. Store history is used meanwhile.', 'order-shield' ) ) . '</p></div>';
 		}
 	}
 
@@ -543,7 +543,7 @@ class OShield_Admin {
 			$screens[] = wc_get_page_screen_id( 'shop-order' );
 		}
 		foreach ( array_unique( $screens ) as $screen ) {
-			add_meta_box( 'oshield-order', __( 'Order Shield', 'order-shield' ), array( __CLASS__, 'render_meta_box' ), $screen, 'side', 'high' );
+			add_meta_box( 'oshield-order', __( 'Fake Order Shield', 'order-shield' ), array( __CLASS__, 'render_meta_box' ), $screen, 'side', 'high' );
 		}
 	}
 

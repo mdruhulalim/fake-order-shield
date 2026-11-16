@@ -374,7 +374,7 @@ class OShield_Checkout {
 		}
 		OShield_Blocklist::block_device( (string) $order->get_meta( '_oshield_device_id' ), (string) $order->get_meta( '_oshield_hwid' ), (string) $order->get_meta( '_oshield_ip' ), $reason, $days, 'auto' );
 		oshield_log_event( 'auto_block', $reason, array( 'phone' => $phone ) );
-		$order->add_order_note( 'Order Shield: ' . $reason );
+		$order->add_order_note( 'Fake Order Shield: ' . $reason );
 	}
 
 	/**
@@ -419,6 +419,6 @@ class OShield_Checkout {
 		if ( OShield_Blocklist::block_device( (string) $order->get_meta( '_oshield_device_id' ), (string) $order->get_meta( '_oshield_hwid' ), (string) $order->get_meta( '_oshield_ip' ), $reason, 0, 'order' ) ) {
 			$done[] = __( 'device', 'order-shield' );
 		}
-		$order->add_order_note( sprintf( /* translators: %s list */ __( 'Order Shield: customer blocked (%s).', 'order-shield' ), implode( ', ', $done ) ) );
+		$order->add_order_note( sprintf( /* translators: %s list */ __( 'Fake Order Shield: customer blocked (%s).', 'order-shield' ), implode( ', ', $done ) ) );
 	}
 }

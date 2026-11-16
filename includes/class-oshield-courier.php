@@ -211,7 +211,7 @@ class OShield_Courier {
 		$result = 'pathao' === $courier ? self::send_pathao( $order, $phone, $note ) : self::send_steadfast( $order, $phone, $note );
 
 		if ( is_wp_error( $result ) ) {
-			$order->add_order_note( sprintf( /* translators: 1: courier 2: error */ __( 'Order Shield: sending to %1$s failed — %2$s', 'order-shield' ), ucfirst( $courier ), $result->get_error_message() ) );
+			$order->add_order_note( sprintf( /* translators: 1: courier 2: error */ __( 'Fake Order Shield: sending to %1$s failed — %2$s', 'order-shield' ), ucfirst( $courier ), $result->get_error_message() ) );
 			return $result;
 		}
 
@@ -250,7 +250,7 @@ class OShield_Courier {
 		$order->save();
 
 		/* translators: 1: courier 2: consignment id */
-		$note_text = sprintf( __( 'Order Shield: sent to %1$s. Consignment ID: %2$s', 'order-shield' ), ucfirst( $courier ), $result['consignment_id'] );
+		$note_text = sprintf( __( 'Fake Order Shield: sent to %1$s. Consignment ID: %2$s', 'order-shield' ), ucfirst( $courier ), $result['consignment_id'] );
 		$to        = self::strip( oshield_opt( 'courier_status_sent' ) );
 		if ( $to && $order->get_status() !== $to ) {
 			$order->update_status( $to, $note_text );
@@ -668,7 +668,7 @@ class OShield_Courier {
 
 		$to = self::map_status( self::status_key( $status ) );
 		/* translators: 1: courier 2: status 3: message */
-		$note = trim( sprintf( __( 'Order Shield: %1$s status → %2$s. %3$s', 'order-shield' ), ucfirst( $ship->courier ), $status, $message ) );
+		$note = trim( sprintf( __( 'Fake Order Shield: %1$s status → %2$s. %3$s', 'order-shield' ), ucfirst( $ship->courier ), $status, $message ) );
 		if ( $to && $order->get_status() !== $to ) {
 			$order->update_status( $to, $note );
 		} else {

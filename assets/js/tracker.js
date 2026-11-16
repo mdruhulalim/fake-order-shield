@@ -1,4 +1,4 @@
-/* Order Shield tracker: live visitors (page views + heartbeat) and session recording. No jQuery needed. */
+/* Fake Order Shield tracker: live visitors (page views + heartbeat) and session recording. No jQuery needed. */
 (function () {
 	'use strict';
 
