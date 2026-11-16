@@ -116,7 +116,7 @@ class FOS_Admin {
 
 		echo '<div class="wrap"><h1 class="wp-heading-inline">Fake Order Shield Licenses</h1><hr class="wp-header-end">';
 		$notes = array(
-			'approved' => 'Approved. The customer got the key by email.',
+			'approved' => 'Approved. The customer sees the key in their account.',
 			'rejected' => 'Order rejected.',
 			'updated'  => 'Saved.',
 			'error'    => 'Could not do that.',
@@ -170,7 +170,7 @@ class FOS_Admin {
 			echo '</td></tr>';
 		}
 		echo '</tbody></table>';
-		echo '<p class="description">Approve only after you see the TrxID and amount in your bKash/Nagad app. Approving starts (or, for a renewal, extends) the license and emails the key.</p></div>';
+		echo '<p class="description">Approve only after you see the TrxID and amount in your bKash/Nagad app. Approving starts (or, for a renewal, extends) the license; the customer sees the key on their account page.</p></div>';
 	}
 
 	/**
@@ -203,7 +203,7 @@ class FOS_Admin {
 			'price_12'     => 'Price — 12 months (৳)',
 			'bkash'        => 'bKash number (Send Money)',
 			'nagad'        => 'Nagad number (Send Money)',
-			'support'      => 'Support (phone / WhatsApp, shown to customers)',
+			'support'      => 'Support number (plugin install / license help, shown on the account page)',
 			'trial_days'   => 'Free trial (days)',
 			'download_url' => 'Plugin ZIP download URL (upload the ZIP to Media and paste its link)',
 		);
@@ -219,6 +219,7 @@ class FOS_Admin {
 		}
 		echo '</table>';
 		submit_button();
-		echo '</form><p class="description">API for the plugin: <code>' . esc_html( rest_url( 'fos/v1/license' ) ) . '</code></p></div>';
+		echo '</form><p class="description">API for the plugin: <code>' . esc_html( rest_url( 'fos/v1/license' ) ) . '</code></p>';
+		echo '<p class="description">Signing public key (built into the plugin; never share the secret key): <code>' . esc_html( FOS_Store::keys()['public'] ) . '</code></p></div>';
 	}
 }

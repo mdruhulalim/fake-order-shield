@@ -78,6 +78,7 @@ class FOS_Store {
 		if ( ! get_option( self::OPTION ) ) {
 			add_option( self::OPTION, self::defaults() );
 		}
+		self::keys();
 
 		// Landing page as the front page + an account page. Created once.
 		$pages = get_option( 'fos_ls_pages', array() );
@@ -113,9 +114,9 @@ class FOS_Store {
 			'price_3'      => '800',
 			'price_6'      => '1500',
 			'price_12'     => '2500',
-			'bkash'        => '',
-			'nagad'        => '',
-			'support'      => '',
+			'bkash'        => '01621275768',
+			'nagad'        => '01621275768',
+			'support'      => '01911080393',
 			'trial_days'   => '3',
 			'download_url' => '',
 		);
@@ -304,16 +305,35 @@ class FOS_Store {
 			$wpdb->update( self::table(), array( 'status' => 'applied', 'approved_at' => $now, 'expires_at' => $expires ), array( 'id' => $row->id ) ); // phpcs:ignore
 		}
 
-		$user = get_userdata( $row->user_id );
-		if ( $user ) {
-			$key = $target->license_key;
-			wp_mail(
-				$user->user_email,
-				'Your Fake Order Shield license is active',
-				sprintf( "License key: %s\nDomain: %s\nValid until: %s\n\nIn WordPress: Fake Order Shield → Settings → License, paste the key and press Activate.\nAccount: %s", $key, $target->domain, get_date_from_gmt( $expires, 'd M Y' ), self::account_url() )
-			);
-		}
 		return true;
+	}
+
+	/**
+	 * Ed25519 key pair, made once on this server. Only the public key ever leaves it.
+	 *
+	 * @return array [secret, public] raw bytes.
+	 */
+	public static function keys() {
+		$k = get_option( 'fos_ls_keypair' );
+		if ( ! is_array( $k ) || empty( $k['secret'] ) ) {
+			$pair = sodium_crypto_sign_keypair();
+			$k    = array(
+				'secret' => base64_encode( sodium_crypto_sign_secretkey( $pair ) ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+				'public' => base64_encode( sodium_crypto_sign_publickey( $pair ) ), // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode
+			);
+			add_option( 'fos_ls_keypair', $k, '', false );
+		}
+		return $k;
+	}
+
+	/**
+	 * Sign a message so the plugin can tell a real answer from a fake server.
+	 *
+	 * @param string $msg Message.
+	 * @return string Base64 signature.
+	 */
+	public static function sign( $msg ) {
+		return base64_encode( sodium_crypto_sign_detached( $msg, base64_decode( self::keys()['secret'] ) ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions
 	}
 
 	/**

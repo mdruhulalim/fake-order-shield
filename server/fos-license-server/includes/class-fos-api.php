@@ -63,8 +63,9 @@ class FOS_API {
 		}
 		$domain = FOS_Store::domain( $r->get_param( 'domain' ) );
 		$row    = FOS_Store::by_key( (string) $r->get_param( 'license_key' ) );
+		$key = strtoupper( trim( (string) $r->get_param( 'license_key' ) ) );
 		if ( ! $row || ! $domain ) {
-			return new WP_REST_Response( array( 'status' => 'invalid', 'message' => 'License key not found.' ), 200 );
+			return new WP_REST_Response( self::signed( $key, $domain, array( 'status' => 'invalid', 'message' => 'License key not found.' ) ), 200 );
 		}
 		$status = FOS_Store::status( $row );
 		$out    = array(
@@ -77,7 +78,7 @@ class FOS_API {
 		if ( $row->domain !== $domain ) {
 			$out['status']  = 'domain_mismatch';
 			$out['message'] = 'This key is for ' . $row->domain . '.';
-			return new WP_REST_Response( $out, 200 );
+			return new WP_REST_Response( self::signed( $key, $domain, $out ), 200 );
 		}
 		global $wpdb;
 		$wpdb->update( FOS_Store::table(), array( 'last_check' => current_time( 'mysql', true ) ), array( 'id' => $row->id ) ); // phpcs:ignore
@@ -88,7 +89,22 @@ class FOS_API {
 			'rejected' => 'Order was not approved.',
 		);
 		$out['message'] = isset( $messages[ $status ] ) ? $messages[ $status ] : '';
-		return new WP_REST_Response( $out, 200 );
+		return new WP_REST_Response( self::signed( $key, $domain, $out ), 200 );
+	}
+
+	/**
+	 * Add ts + sig to a license answer. Signed text: license|KEY|domain|status|expires_unix|ts
+	 *
+	 * @param string $key    Key as sent.
+	 * @param string $domain Domain as sent (normalised).
+	 * @param array  $out    Answer.
+	 * @return array
+	 */
+	private static function signed( $key, $domain, $out ) {
+		$out['ts']  = time();
+		$exp        = ! empty( $out['expires_at'] ) ? strtotime( $out['expires_at'] ) : 0;
+		$out['sig'] = FOS_Store::sign( 'license|' . $key . '|' . $domain . '|' . $out['status'] . '|' . $exp . '|' . $out['ts'] );
+		return $out;
 	}
 
 	/**
@@ -110,11 +126,14 @@ class FOS_API {
 		$wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO $t (domain, started_at, ip) VALUES (%s, %s, %s)", $domain, current_time( 'mysql', true ), isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '' ) ); // phpcs:ignore
 		$started = $wpdb->get_var( $wpdb->prepare( "SELECT started_at FROM $t WHERE domain = %s", $domain ) ); // phpcs:ignore
 		$ends    = strtotime( $started . ' UTC' ) + max( 0, (int) FOS_Store::opt( 'trial_days' ) ) * DAY_IN_SECONDS;
+		$ts      = time();
 		return new WP_REST_Response(
 			array(
-				'status'     => $ends > time() ? 'trial' : 'trial_ended',
+				'status'     => $ends > $ts ? 'trial' : 'trial_ended',
 				'trial_ends' => gmdate( 'c', $ends ),
 				'buy_url'    => FOS_Store::account_url(),
+				'ts'         => $ts,
+				'sig'        => FOS_Store::sign( 'trial|' . $domain . '|' . $ends . '|' . $ts ), // Signed text: trial|domain|ends_unix|ts.
 			),
 			200
 		);

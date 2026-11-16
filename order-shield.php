@@ -3,7 +3,7 @@
  * Plugin Name:       Fake Order Shield
  * Plugin URI:        https://brandingsolutionsbd.com/
  * Description:       Fake order protection for WooCommerce: fraud check by phone, block list (phone, IP, device), phone validation, repeat-order blocker, VPN/country block, incomplete orders, live visitors with session replay and Steadfast &amp; Pathao courier.
- * Version:           1.4.0
+ * Version:           1.4.1
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Branding Solutions BD
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'OSHIELD_VERSION', '1.4.0' );
+define( 'OSHIELD_VERSION', '1.4.1' );
 define( 'OSHIELD_DB_VERSION', '1.2.0' );
 define( 'OSHIELD_FILE', __FILE__ );
 define( 'OSHIELD_DIR', plugin_dir_path( __FILE__ ) );

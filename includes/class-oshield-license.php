@@ -17,13 +17,14 @@ class OShield_License {
 	const OPTION = 'oshield_license';
 
 	/**
-	 * API base URL. Define OSHIELD_LICENSE_API in wp-config.php to point elsewhere (testing).
-	 *
-	 * @return string
+	 * License server. Fixed on purpose: answers must also carry a signature from its key.
 	 */
-	public static function api() {
-		return defined( 'OSHIELD_LICENSE_API' ) ? OSHIELD_LICENSE_API : 'https://fakeordershield.com/wp-json/fos/v1/';
-	}
+	const API = 'https://fakeordershield.com/wp-json/fos/v1/';
+
+	/**
+	 * fakeordershield.com signing public key (Ed25519, base64).
+	 */
+	const PUBLIC_KEY = 'oJEiT5E+13bSwMtPkvhTopLVdu41ashtBqpgaZuuyQA=';
 
 	/**
 	 * Saved state: key, status, expires (unix), trial_ends (unix), message, checked (unix).
@@ -115,12 +116,45 @@ class OShield_License {
 	 * @return array|WP_Error Decoded JSON.
 	 */
 	private static function call( $path, $body ) {
-		$r = wp_remote_post( self::api() . $path, array( 'timeout' => 10, 'body' => $body ) );
+		$r = wp_remote_post( self::API . $path, array( 'timeout' => 10, 'body' => $body ) );
 		if ( is_wp_error( $r ) ) {
 			return $r;
 		}
 		$json = json_decode( wp_remote_retrieve_body( $r ), true );
-		return is_array( $json ) ? $json : new WP_Error( 'oshield_license', __( 'The license server sent an unexpected answer.', 'order-shield' ) );
+		if ( ! is_array( $json ) || ! self::verified( $path, $body, $json ) ) {
+			return new WP_Error( 'oshield_license', __( 'Could not verify the answer from the license server.', 'order-shield' ) );
+		}
+		return $json;
+	}
+
+	/**
+	 * Is this answer really from fakeordershield.com, about this request, and recent?
+	 *
+	 * @param string $path Endpoint.
+	 * @param array  $body What we sent.
+	 * @param array  $r    Answer.
+	 * @return bool
+	 */
+	private static function verified( $path, $body, $r ) {
+		if ( empty( $r['sig'] ) || empty( $r['ts'] ) || abs( time() - (int) $r['ts'] ) > DAY_IN_SECONDS ) {
+			return false;
+		}
+		if ( 'trial' === $path ) {
+			$msg = 'trial|' . $body['domain'] . '|' . strtotime( (string) ( $r['trial_ends'] ?? '' ) ) . '|' . (int) $r['ts'];
+		} else {
+			$exp = ! empty( $r['expires_at'] ) ? strtotime( $r['expires_at'] ) : 0;
+			$msg = 'license|' . $body['license_key'] . '|' . $body['domain'] . '|' . ( $r['status'] ?? '' ) . '|' . $exp . '|' . (int) $r['ts'];
+		}
+		$sig = base64_decode( (string) $r['sig'], true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+		$pub = base64_decode( self::PUBLIC_KEY, true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
+		if ( false === $sig || false === $pub || 64 !== strlen( $sig ) || 32 !== strlen( $pub ) ) {
+			return false;
+		}
+		try {
+			return sodium_crypto_sign_verify_detached( $sig, $msg, $pub );
+		} catch ( Exception $e ) {
+			return false;
+		}
 	}
 
 	/**

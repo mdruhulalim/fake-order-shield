@@ -219,7 +219,7 @@ class FOS_Front {
 					<li><b>অ্যাকাউন্ট খুলুন</b><span>ইমেইল দিয়ে ১ মিনিটে অ্যাকাউন্ট, প্লাগিন ডাউনলোড করুন।</span></li>
 					<li><b><?php echo esc_html( $trial ); ?> দিন ফ্রি</b><span>ইনস্টল করলেই সব ফিচার চালু, কোনো কী লাগবে না।</span></li>
 					<li><b>প্যাকেজ নিন</b><span>bKash বা Nagad-এ পেমেন্ট করে TrxID দিন।</span></li>
-					<li><b>লাইসেন্স অ্যাক্টিভেট</b><span>অনুমোদনের পর লাইসেন্স কী পেস্ট করুন, ব্যস।</span></li>
+					<li><b>লাইসেন্স অ্যাক্টিভেট</b><span>অনুমোদনের পর অ্যাকাউন্ট থেকে কী কপি করে প্লাগিনে পেস্ট করুন।</span></li>
 				</ol>
 			</div>
 		</section>
@@ -251,7 +251,7 @@ class FOS_Front {
 			<div class="fos-container fos-faq">
 				<h2 class="fos-h2">প্রশ্ন ও উত্তর</h2>
 				<details><summary>ফ্রি ট্রায়ালে কী কী পাব?</summary><p>ইনস্টলের পর <?php echo esc_html( $trial ); ?> দিন সব ফিচার চালু থাকে। এরপর লাইসেন্স অ্যাক্টিভেট না করলে প্রোটেকশন বন্ধ হয়, কিন্তু আপনার সেটিংস ও ডাটা মুছে যায় না।</p></details>
-				<details><summary>পেমেন্ট কীভাবে করব?</summary><p>bKash বা Nagad-এ Send Money করে অ্যাকাউন্ট পেজে নম্বর ও TrxID দিন। যাচাই করে সাধারণত কয়েক ঘণ্টার মধ্যে লাইসেন্স চালু হয়, ইমেইলেও কী পাবেন।</p></details>
+				<details><summary>পেমেন্ট কীভাবে করব?</summary><p>bKash বা Nagad-এ Send Money করে অ্যাকাউন্ট পেজে নম্বর ও TrxID দিন। যাচাই করে সাধারণত কয়েক ঘণ্টার মধ্যে লাইসেন্স চালু হয়। লাইসেন্স কী আপনার অ্যাকাউন্টে দেখতে পাবেন।</p></details>
 				<details><summary>এক লাইসেন্স কয়টা সাইটে চলবে?</summary><p>একটি লাইসেন্স একটি ডোমেইনের জন্য। আরেকটি সাইটে চালাতে আরেকটি প্যাকেজ নিন।</p></details>
 				<details><summary>মেয়াদ শেষ হলে কী হবে?</summary><p>প্রোটেকশন বন্ধ হবে, ডাটা থাকবে। রিনিউ করলে আগের মতো সব চালু হয়ে যাবে। মেয়াদ থাকা অবস্থায় রিনিউ করলে বাকি দিনগুলো যোগ হয়।</p></details>
 				<details><summary>WooCommerce লাগবে?</summary><p>হ্যাঁ, Fake Order Shield WooCommerce স্টোরের জন্য বানানো।</p></details>
@@ -283,7 +283,7 @@ class FOS_Front {
 		if ( 'welcome' === $flag ) {
 			echo '<div class="fos-alert fos-alert-success">' . esc_html__( 'Account created. Download the plugin below — you get a free trial as soon as you install it.', 'fos-license-server' ) . '</div>';
 		} elseif ( 'ordered' === $flag ) {
-			echo '<div class="fos-alert fos-alert-success">' . esc_html__( 'Order received! We will check your payment and activate your license soon. You will get an email with the key.', 'fos-license-server' ) . '</div>';
+			echo '<div class="fos-alert fos-alert-success">' . esc_html__( 'Order received! We will check your payment and activate your license soon. Your license key will appear here on this page.', 'fos-license-server' ) . '</div>';
 		}
 
 		if ( ! is_user_logged_in() ) {
@@ -426,7 +426,7 @@ class FOS_Front {
 				<button class="fos-btn fos-btn-primary" type="submit">অর্ডার করুন</button>
 			</form>
 			<?php if ( FOS_Store::opt( 'support' ) ) : ?>
-				<p class="fos-muted">সাহায্য লাগলে: <?php echo esc_html( FOS_Store::opt( 'support' ) ); ?></p>
+				<p class="fos-muted">প্লাগিন ইনস্টল বা লাইসেন্সে সমস্যা হলে কল করুন: <?php echo esc_html( FOS_Store::opt( 'support' ) ); ?></p>
 			<?php endif; ?>
 		</div>
 		<?php
