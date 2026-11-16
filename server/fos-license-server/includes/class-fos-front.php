@@ -173,117 +173,222 @@ class FOS_Front {
 	 */
 	public static function landing() {
 		$account  = FOS_Store::account_url();
+		$signup   = $account . '#register';
 		$packages = FOS_Store::packages();
 		$trial    = (int) FOS_Store::opt( 'trial_days' );
+		$support  = FOS_Store::opt( 'support' );
 		$labels   = array(
 			1  => '১ মাস',
 			3  => '৩ মাস',
 			6  => '৬ মাস',
 			12 => '১২ মাস',
 		);
-		$features = array(
-			array( 'smartphone', 'ফোন নম্বর যাচাই', 'শুধু সঠিক ১১ সংখ্যার বাংলাদেশি মোবাইল নম্বর দিয়ে অর্ডার। বাংলা সংখ্যা ও +88 নিজে থেকেই ঠিক হয়।' ),
-			array( 'search', 'ফ্রড চেক', 'কাস্টমারের আগের অর্ডারের কতগুলো ডেলিভারি হয়েছে আর কতগুলো ফেরত এসেছে, অর্ডার কনফার্মের আগেই দেখুন।' ),
-			array( 'dismiss', 'ব্লক লিস্ট', 'ফেক কাস্টমারের ফোন, IP, ডিভাইস বা ইমেইল ব্লক করুন। একই ডিভাইসের অন্য ব্রাউজারও আটকে যায়।' ),
-			array( 'performance', 'অটো ব্লক ও রিপিট ব্লকার', 'অল্প সময়ে অনেক অর্ডার বা একই নম্বর থেকে বারবার অর্ডার নিজে থেকেই আটকায়।' ),
-			array( 'filter', 'স্মার্ট অর্ডার ফিল্টার', 'যাদের ডেলিভারি সফলতার হার কম, তাদের অর্ডার চেকআউটেই থেমে যায়।' ),
-			array( 'admin-site-alt3', 'VPN ও দেশ ব্লক', 'VPN বা বিদেশ থেকে আসা সন্দেহজনক অর্ডার বন্ধ করুন।' ),
-			array( 'cart', 'ইনকমপ্লিট অর্ডার', 'যারা চেকআউটে তথ্য দিয়ে চলে গেছে, তাদের নম্বর পান। কল করে অর্ডার নিন।' ),
-			array( 'visibility', 'লাইভ ভিজিটর ও সেশন রিপ্লে', 'কে এখন সাইটে আছে দেখুন, ভিজিটর কী করেছে ভিডিওর মতো দেখুন।' ),
-			array( 'car', 'Steadfast ও Pathao', 'এক ক্লিকে পার্সেল পাঠান, ডেলিভারি হলে অর্ডার স্ট্যাটাস নিজে থেকে বদলায়।' ),
+		$pillars  = array(
+			array(
+				'shield-alt',
+				'আটকায়',
+				'চেকআউটেই ফেক অর্ডার থামে',
+				array(
+					array( 'smartphone', 'ফোন নম্বর যাচাই', 'শুধু সঠিক ১১ সংখ্যার বাংলাদেশি নম্বর। বাংলা সংখ্যা ও +88 নিজেই ঠিক হয়।' ),
+					array( 'dismiss', 'ব্লক লিস্ট', 'ফোন, IP, ডিভাইস বা ইমেইল ব্লক। একই ডিভাইসের সব ব্রাউজার আটকায়।' ),
+					array( 'performance', 'অটো ব্লক ও রিপিট ব্লকার', 'অল্প সময়ে অনেক অর্ডার বা বারবার অর্ডার নিজেই আটকায়।' ),
+					array( 'admin-site-alt3', 'VPN ও দেশ ব্লক', 'VPN বা বিদেশ থেকে আসা সন্দেহজনক অর্ডার বন্ধ।' ),
+				),
+			),
+			array(
+				'search',
+				'চেনায়',
+				'অর্ডার কনফার্মের আগেই জানুন কে আসল',
+				array(
+					array( 'chart-bar', 'ফ্রড চেক', 'আগের কয়টা পার্সেল ডেলিভারি হয়েছে, কয়টা ফেরত — এক নজরে।' ),
+					array( 'filter', 'স্মার্ট অর্ডার ফিল্টার', 'ডেলিভারি হার কম হলে অর্ডার চেকআউটেই থেমে যায়।' ),
+					array( 'visibility', 'লাইভ ভিজিটর ও সেশন রিপ্লে', 'কে সাইটে আছে আর কী করেছে, ভিডিওর মতো দেখুন।' ),
+				),
+			),
+			array(
+				'money-alt',
+				'ফেরত আনে',
+				'হারানো বিক্রি আর সময় বাঁচায়',
+				array(
+					array( 'cart', 'ইনকমপ্লিট অর্ডার', 'চেকআউটে তথ্য দিয়ে চলে গেলেও নম্বর পান, কল করে অর্ডার নিন।' ),
+					array( 'car', 'Steadfast ও Pathao', 'এক ক্লিকে পার্সেল পাঠান, স্ট্যাটাস নিজেই আপডেট হয়।' ),
+					array( 'admin-settings', 'এক ক্লিকে সেটআপ', 'Light, Balanced বা Strict — একটা বেছে নিলেই সব রুল সেট।' ),
+				),
+			),
 		);
+		$monthly  = $packages[1];
+		$six_pm   = $packages[6] > 0 ? round( $packages[6] / 6 ) : 0;
+		$per_day  = $packages[12] > 0 ? (int) ceil( $packages[12] / 365 ) : (int) ceil( $monthly / 30 );
 		ob_start();
 		?>
-		<section class="fos-hero">
-			<div class="fos-container fos-hero-grid">
-				<div>
-					<span class="fos-badge">WooCommerce প্লাগিন · বাংলাদেশের জন্য</span>
-					<h1>ফেক অর্ডারে আর ডেলিভারি চার্জ নষ্ট নয়</h1>
-					<p class="fos-lead">Fake Order Shield চেকআউটেই ফেক ও ঝুঁকিপূর্ণ অর্ডার আটকে দেয়। ফ্রড চেক, ব্লক লিস্ট, ইনকমপ্লিট অর্ডার আর কুরিয়ার, সব এক প্লাগিনে।</p>
+		<section class="fos-hero2">
+			<div class="fos-glow fos-glow-a"></div><div class="fos-glow fos-glow-b"></div>
+			<div class="fos-container fos-hero2-grid">
+				<div class="fos-hero2-copy">
+					<span class="fos-chip"><span class="fos-dot"></span> বাংলাদেশি WooCommerce স্টোরের জন্য বানানো</span>
+					<h1>ফেক অর্ডার ঢোকার আগেই <span class="fos-grad">থামিয়ে দিন</span></h1>
+					<p class="fos-lead2">প্রতিটা ফেক অর্ডার মানে নষ্ট ডেলিভারি চার্জ, প্যাকেজিং আর সময়। Fake Order Shield চেকআউটেই সন্দেহজনক অর্ডার আটকায়, আসল কাস্টমারকে নির্বিঘ্নে অর্ডার করতে দেয়।</p>
 					<div class="fos-cta">
-						<a class="fos-btn fos-btn-primary" href="<?php echo esc_url( $account ); ?>"><?php echo esc_html( $trial ); ?> দিন ফ্রি ব্যবহার করুন</a>
-						<a class="fos-btn fos-btn-ghost" href="#pricing">প্যাকেজ দেখুন</a>
+						<a class="fos-btn fos-btn-glow" href="<?php echo esc_url( $signup ); ?>"><?php echo esc_html( $trial ); ?> দিন ফ্রি ট্রায়াল শুরু করুন <span class="dashicons dashicons-arrow-right-alt"></span></a>
+						<a class="fos-btn fos-btn-outline" href="#how">কীভাবে কাজ করে</a>
 					</div>
-					<p class="fos-note">পেমেন্ট লাগবে না · অ্যাকাউন্ট খুললেই <?php echo esc_html( $trial ); ?> দিন সব ফিচার ফ্রি</p>
+					<ul class="fos-trust">
+						<li><span class="dashicons dashicons-yes-alt"></span> কোনো পেমেন্ট লাগবে না</li>
+						<li><span class="dashicons dashicons-yes-alt"></span> ২ মিনিটে সেটআপ</li>
+						<li><span class="dashicons dashicons-yes-alt"></span> বাংলায় সাপোর্ট</li>
+					</ul>
 				</div>
-				<div class="fos-hero-card" aria-hidden="true">
-					<div class="fos-mock-head"><span></span><span></span><span></span></div>
-					<div class="fos-mock-row fos-bad"><strong>অর্ডার আটকানো হয়েছে</strong><small>017XXXXXXXX · ডেলিভারি হার ২০%</small></div>
-					<div class="fos-mock-row fos-good"><strong>অর্ডার গ্রহণ</strong><small>018XXXXXXXX · ডেলিভারি হার ১০০%</small></div>
-					<div class="fos-mock-row fos-warn"><strong>ইনকমপ্লিট অর্ডার</strong><small>019XXXXXXXX · ৳৮৯৯ · কল করুন</small></div>
-					<div class="fos-mock-stat"><span>আজ আটকানো</span><b>১২</b></div>
+
+				<div class="fos-hero2-visual" aria-hidden="true">
+					<div class="fos-app">
+						<div class="fos-app-bar"><span></span><span></span><span></span><b>Fake Order Shield</b></div>
+						<div class="fos-app-body">
+							<div class="fos-app-stats">
+								<div><small>আজ আটকানো</small><strong>১২</strong></div>
+								<div><small>অনলাইন এখন</small><strong>৮</strong></div>
+								<div><small>ইনকমপ্লিট</small><strong>৫</strong></div>
+							</div>
+							<div class="fos-app-row is-bad"><span class="dashicons dashicons-dismiss"></span><div><b>অর্ডার আটকানো হয়েছে</b><small>017XXXXXXXX · ডেলিভারি হার ২০%</small></div><em>ব্লক</em></div>
+							<div class="fos-app-row is-good"><span class="dashicons dashicons-yes"></span><div><b>অর্ডার গ্রহণ</b><small>018XXXXXXXX · ডেলিভারি হার ১০০%</small></div><em>আসল</em></div>
+							<div class="fos-app-row is-warn"><span class="dashicons dashicons-phone"></span><div><b>ইনকমপ্লিট অর্ডার</b><small>019XXXXXXXX · ৳৮৯৯ কার্টে</small></div><em>কল করুন</em></div>
+						</div>
+					</div>
+					<div class="fos-float fos-float-a"><span class="dashicons dashicons-shield-alt"></span> VPN অর্ডার আটকানো</div>
+					<div class="fos-float fos-float-b"><span class="dashicons dashicons-car"></span> Steadfast-এ পাঠানো হয়েছে</div>
+				</div>
+			</div>
+			<div class="fos-container">
+				<div class="fos-works">
+					<span>যার সাথে কাজ করে</span><b>WooCommerce</b><b>Steadfast</b><b>Pathao</b>
+				</div>
+			</div>
+		</section>
+
+		<section class="fos-section fos-pain">
+			<div class="fos-container fos-pain-grid">
+				<div>
+					<span class="fos-eyebrow">সমস্যাটা ছোট না</span>
+					<h2 class="fos-h2l">ফেক অর্ডারে আপনার মাসে কত টাকা যাচ্ছে?</h2>
+					<p class="fos-muted">প্রতিটা ফেরত পার্সেলে দুই দিকের ডেলিভারি চার্জ, প্যাকেজিং আর কল করার সময় যায়। আপনার স্টোরের হিসাব দিন, আনুমানিক ক্ষতি দেখুন।</p>
+					<ul class="fos-pain-list">
+						<li><span class="dashicons dashicons-minus"></span> একই নম্বর থেকে বারবার ফেক অর্ডার</li>
+						<li><span class="dashicons dashicons-minus"></span> পার্সেল পাঠানোর পর ফোন বন্ধ</li>
+						<li><span class="dashicons dashicons-minus"></span> চেকআউটে এসে চলে যাওয়া কাস্টমার হারিয়ে যায়</li>
+					</ul>
+				</div>
+				<div class="fos-calc" data-price="<?php echo esc_attr( $six_pm ); ?>">
+					<h3>ক্ষতির হিসাব</h3>
+					<label>দিনে গড়ে কয়টা অর্ডার আসে? <output data-for="orders">30</output><input type="range" min="5" max="300" step="5" value="30" data-k="orders"></label>
+					<label>কত শতাংশ ফেক বা ফেরত হয়? <output data-for="pct">15%</output><input type="range" min="1" max="50" value="15" data-k="pct"></label>
+					<label>প্রতি ফেক অর্ডারে খরচ (৳) <output data-for="cost">150</output><input type="range" min="50" max="400" step="10" value="150" data-k="cost"></label>
+					<div class="fos-calc-out">
+						<div><small>মাসে আনুমানিক ক্ষতি</small><strong data-out="loss">৳20,250</strong></div>
+						<div><small>Fake Order Shield (৬ মাসের প্যাকেজে)</small><strong>৳<?php echo esc_html( number_format_i18n( $six_pm ) ); ?>/মাস</strong></div>
+					</div>
+					<p class="fos-calc-note" data-out="note"></p>
+					<a class="fos-btn fos-btn-primary fos-btn-block" href="<?php echo esc_url( $signup ); ?>">ফ্রি ট্রায়ালে নিজেই দেখুন</a>
 				</div>
 			</div>
 		</section>
 
 		<section class="fos-section" id="features">
 			<div class="fos-container">
-				<h2 class="fos-h2">যা যা পাচ্ছেন</h2>
-				<p class="fos-sub">সব ফিচার সব প্যাকেজে। কোনো লুকানো চার্জ নেই।</p>
-				<div class="fos-features">
-					<?php foreach ( $features as $f ) : ?>
-						<div class="fos-feature">
-							<span class="fos-ico dashicons dashicons-<?php echo esc_attr( $f[0] ); ?>"></span>
-							<h3><?php echo esc_html( $f[1] ); ?></h3>
-							<p><?php echo esc_html( $f[2] ); ?></p>
+				<span class="fos-eyebrow fos-center">সব ফিচার, সব প্যাকেজে</span>
+				<h2 class="fos-h2">আটকায়, চেনায়, ফেরত আনে</h2>
+				<p class="fos-sub">একটা প্লাগিনে পুরো সুরক্ষা। আলাদা অ্যাপ, আলাদা খরচ নেই।</p>
+				<div class="fos-pillars">
+					<?php foreach ( $pillars as $p ) : ?>
+						<div class="fos-pillar">
+							<div class="fos-pillar-head"><span class="fos-ico2 dashicons dashicons-<?php echo esc_attr( $p[0] ); ?>"></span><div><h3><?php echo esc_html( $p[1] ); ?></h3><p><?php echo esc_html( $p[2] ); ?></p></div></div>
+							<ul>
+								<?php foreach ( $p[3] as $f ) : ?>
+									<li><span class="dashicons dashicons-<?php echo esc_attr( $f[0] ); ?>"></span><div><b><?php echo esc_html( $f[1] ); ?></b><small><?php echo esc_html( $f[2] ); ?></small></div></li>
+								<?php endforeach; ?>
+							</ul>
 						</div>
 					<?php endforeach; ?>
 				</div>
 			</div>
 		</section>
 
-		<section class="fos-section fos-soft">
+		<section class="fos-section fos-dark" id="how">
 			<div class="fos-container">
-				<h2 class="fos-h2">কীভাবে শুরু করবেন</h2>
-				<ol class="fos-steps">
-					<li><b>অ্যাকাউন্ট খুলুন</b><span>ইমেইল আর ডোমেইন দিয়ে ১ মিনিটে অ্যাকাউন্ট, সাথে ফ্রি ট্রায়াল কী।</span></li>
-					<li><b>প্লাগিন অ্যাক্টিভেট</b><span>প্লাগিন ডাউনলোড করে ইনস্টল করুন, কী দিন। <?php echo esc_html( $trial ); ?> দিন সব ফিচার ফ্রি।</span></li>
-					<li><b>প্যাকেজ নিন</b><span>bKash বা Nagad-এ পেমেন্ট করে TrxID দিন।</span></li>
-					<li><b>চালু থাকবে</b><span>অনুমোদনের পর একই কী-তে প্যাকেজ চালু, কিছু বদলাতে হয় না।</span></li>
-				</ol>
+				<span class="fos-eyebrow fos-center fos-eyebrow-light">শুরু করা সহজ</span>
+				<h2 class="fos-h2 fos-light">৩ ধাপে চালু, আজকেই</h2>
+				<div class="fos-steps2">
+					<div><span>১</span><h3>অ্যাকাউন্ট খুলুন</h3><p>ইমেইল আর ডোমেইন দিন। সাথে সাথে <?php echo esc_html( $trial ); ?> দিনের ফ্রি ট্রায়াল কী পাবেন।</p></div>
+					<div><span>২</span><h3>প্লাগিন অ্যাক্টিভেট করুন</h3><p>প্লাগিন ইনস্টল করে কী দিন, একটা প্রোটেকশন লেভেল বেছে নিন। ব্যস, চালু।</p></div>
+					<div><span>৩</span><h3>পছন্দ হলে প্যাকেজ নিন</h3><p>bKash বা Nagad-এ পেমেন্ট করুন। একই কী-তে চলতে থাকবে, কিছু বদলাতে হবে না।</p></div>
+				</div>
+				<div class="fos-center"><a class="fos-btn fos-btn-glow" href="<?php echo esc_url( $signup ); ?>">এখনই ফ্রি শুরু করুন</a></div>
 			</div>
 		</section>
 
 		<section class="fos-section" id="pricing">
 			<div class="fos-container">
-				<h2 class="fos-h2">প্যাকেজ</h2>
-				<p class="fos-sub">প্রতিটি লাইসেন্স একটি ডোমেইনের জন্য। লম্বা প্যাকেজে খরচ কম।</p>
-				<div class="fos-prices">
+				<span class="fos-eyebrow fos-center">সহজ দাম</span>
+				<h2 class="fos-h2">দিনে মাত্র ৳<?php echo esc_html( number_format_i18n( $per_day ) ); ?> থেকে পুরো সুরক্ষা</h2>
+				<p class="fos-sub">প্রতিটি লাইসেন্স একটি ডোমেইনের জন্য। লম্বা প্যাকেজে সাশ্রয় বেশি। আগে <?php echo esc_html( $trial ); ?> দিন ফ্রি চালিয়ে দেখুন।</p>
+				<div class="fos-prices2">
 					<?php
-					$monthly = $packages[1];
 					foreach ( $packages as $m => $price ) :
 						$save = ( $monthly > 0 && $m > 1 ) ? (int) round( ( 1 - $price / ( $monthly * $m ) ) * 100 ) : 0;
+						$pop  = 6 === $m;
 						?>
-						<div class="fos-price<?php echo 6 === $m ? ' is-popular' : ''; ?>">
-							<?php if ( 6 === $m ) : ?><span class="fos-pop">জনপ্রিয়</span><?php endif; ?>
+						<div class="fos-plan<?php echo $pop ? ' is-pop' : ''; ?>">
+							<?php if ( $pop ) : ?><span class="fos-plan-tag">প্রস্তাবিত</span><?php endif; ?>
 							<h3><?php echo esc_html( $labels[ $m ] ); ?></h3>
-							<div class="fos-amount"><?php echo esc_html( self::tk( $price ) ); ?></div>
-							<p class="fos-per"><?php echo esc_html( sprintf( 'মাসে %s', self::tk( round( $price / $m ) ) ) ); ?><?php echo $save > 0 ? ' · <b>' . esc_html( $save ) . '% সাশ্রয়</b>' : ''; ?></p>
+							<div class="fos-plan-price"><?php echo esc_html( self::tk( $price ) ); ?></div>
+							<p class="fos-plan-per">মাসে <?php echo esc_html( self::tk( round( $price / $m ) ) ); ?></p>
+							<?php if ( $save > 0 ) : ?><span class="fos-save"><?php echo esc_html( $save ); ?>% সাশ্রয়</span><?php else : ?><span class="fos-save is-empty">&nbsp;</span><?php endif; ?>
 							<ul><li>সব ফিচার</li><li>১টি ডোমেইন</li><li>আপডেট ও সাপোর্ট</li></ul>
-							<a class="fos-btn <?php echo 6 === $m ? 'fos-btn-primary' : 'fos-btn-ghost'; ?>" href="<?php echo esc_url( add_query_arg( 'months', $m, $account ) ); ?>#buy">কিনুন</a>
+							<a class="fos-btn <?php echo $pop ? 'fos-btn-primary' : 'fos-btn-ghost'; ?> fos-btn-block" href="<?php echo esc_url( add_query_arg( 'months', $m, $account ) ); ?>#buy"><?php echo esc_html( $labels[ $m ] ); ?> নিন</a>
 						</div>
 					<?php endforeach; ?>
 				</div>
+				<p class="fos-pay-note"><span class="dashicons dashicons-lock"></span> bKash ও Nagad-এ পেমেন্ট · প্রথমে <?php echo esc_html( $trial ); ?> দিন ফ্রি, পছন্দ না হলে কিছুই দিতে হবে না</p>
 			</div>
 		</section>
 
 		<section class="fos-section fos-soft">
 			<div class="fos-container fos-faq">
 				<h2 class="fos-h2">প্রশ্ন ও উত্তর</h2>
-				<details><summary>ফ্রি ট্রায়ালে কী কী পাব?</summary><p>অ্যাকাউন্ট খোলার সময় ডোমেইন দিলে একটি ট্রায়াল কী পাবেন, <?php echo esc_html( $trial ); ?> দিন সব ফিচার চালু থাকে। এরপর প্যাকেজ না নিলে প্রোটেকশন বন্ধ হয়, কিন্তু আপনার সেটিংস ও ডাটা মুছে যায় না।</p></details>
-				<details><summary>পেমেন্ট কীভাবে করব?</summary><p>bKash বা Nagad-এ Send Money করে অ্যাকাউন্ট পেজে নম্বর ও TrxID দিন। যাচাই করে সাধারণত কয়েক ঘণ্টার মধ্যে লাইসেন্স চালু হয়। লাইসেন্স কী আপনার অ্যাকাউন্টে দেখতে পাবেন।</p></details>
+				<details open><summary>ফ্রি ট্রায়ালে কী কী পাব?</summary><p>অ্যাকাউন্ট খোলার সময় ডোমেইন দিলে একটি ট্রায়াল কী পাবেন। <?php echo esc_html( $trial ); ?> দিন সব ফিচার চালু থাকে, কোনো পেমেন্ট লাগে না। এরপর প্যাকেজ না নিলে প্রোটেকশন বন্ধ হয়, কিন্তু সেটিংস ও ডাটা মুছে যায় না।</p></details>
+				<details><summary>আসল কাস্টমার কি আটকে যাবে?</summary><p>না, যদি সেটিংস ঠিক থাকে। Balanced লেভেল আসল কাস্টমারকে ঝামেলা ছাড়াই অর্ডার করতে দেয়। কেউ ভুলে আটকালে তাকে আপনার নম্বরে কল করার বাটন দেখানো হয়।</p></details>
+				<details><summary>পেমেন্ট কীভাবে করব?</summary><p>bKash বা Nagad-এ Send Money করে অ্যাকাউন্ট পেজে নম্বর ও TrxID দিন। যাচাইয়ের পর লাইসেন্স চালু হয়, কী আপনার অ্যাকাউন্টেই দেখবেন।</p></details>
 				<details><summary>এক লাইসেন্স কয়টা সাইটে চলবে?</summary><p>একটি লাইসেন্স একটি ডোমেইনের জন্য। আরেকটি সাইটে চালাতে আরেকটি প্যাকেজ নিন।</p></details>
-				<details><summary>মেয়াদ শেষ হলে কী হবে?</summary><p>প্রোটেকশন বন্ধ হবে, ডাটা থাকবে। রিনিউ করলে আগের মতো সব চালু হয়ে যাবে। মেয়াদ থাকা অবস্থায় রিনিউ করলে বাকি দিনগুলো যোগ হয়।</p></details>
-				<details><summary>WooCommerce লাগবে?</summary><p>হ্যাঁ, Fake Order Shield WooCommerce স্টোরের জন্য বানানো।</p></details>
+				<details><summary>মেয়াদ শেষ হলে কী হবে?</summary><p>প্রোটেকশন বন্ধ হবে, ডাটা থাকবে। রিনিউ করলে আগের মতো সব চালু। মেয়াদ থাকতেই রিনিউ করলে বাকি দিনগুলো যোগ হয়।</p></details>
+				<details><summary>সাইট কি স্লো হবে?</summary><p>না। চেক হয় শুধু অর্ডার দেওয়ার মুহূর্তে। সেশন রিপ্লে চাইলে শুধু চেকআউট পেজে চালু রাখতে পারেন।</p></details>
 			</div>
 		</section>
 
-		<section class="fos-final">
+		<section class="fos-final2">
 			<div class="fos-container">
-				<h2>আজই ফেক অর্ডার বন্ধ করুন</h2>
-				<a class="fos-btn fos-btn-light" href="<?php echo esc_url( $account ); ?>">ফ্রি শুরু করুন</a>
+				<h2>পরের ফেক অর্ডারটা আসার আগেই চালু করুন</h2>
+				<p><?php echo esc_html( $trial ); ?> দিন ফ্রি · কোনো পেমেন্ট লাগবে না · ২ মিনিটে সেটআপ</p>
+				<a class="fos-btn fos-btn-light" href="<?php echo esc_url( $signup ); ?>">ফ্রি ট্রায়াল শুরু করুন</a>
+				<?php if ( $support ) : ?><p class="fos-final-help">ইনস্টলে সাহায্য লাগলে কল করুন: <a href="tel:<?php echo esc_attr( preg_replace( '/[^0-9+]/', '', $support ) ); ?>"><?php echo esc_html( $support ); ?></a></p><?php endif; ?>
 			</div>
 		</section>
+
+		<div class="fos-sticky-cta"><a class="fos-btn fos-btn-primary fos-btn-block" href="<?php echo esc_url( $signup ); ?>"><?php echo esc_html( $trial ); ?> দিন ফ্রি ট্রায়াল</a></div>
+
+		<script>
+		(function () {
+			var c = document.querySelector('.fos-calc');
+			if (!c) { return; }
+			var bn = function (n) { return Math.round(n).toLocaleString('en-IN'); };
+			var run = function () {
+				var v = {};
+				c.querySelectorAll('input[data-k]').forEach(function (i) { v[i.dataset.k] = +i.value; c.querySelector('output[data-for="' + i.dataset.k + '"]').textContent = i.value + ( 'pct' === i.dataset.k ? '%' : '' ); });
+				var loss = v.orders * 30 * v.pct / 100 * v.cost, price = +c.dataset.price || 0;
+				c.querySelector('[data-out="loss"]').textContent = '৳' + bn(loss);
+				c.querySelector('[data-out="note"]').textContent = price && loss > price ? 'অর্ধেক ফেক অর্ডার আটকালেও মাসে প্রায় ৳' + bn(loss / 2 - price) + ' বাঁচে।' : '';
+			};
+			c.addEventListener('input', run);
+			run();
+		})();
+		</script>
 		<?php
 		return ob_get_clean();
 	}
@@ -328,7 +433,7 @@ class FOS_Front {
 		// phpcs:enable
 		?>
 		<div class="fos-auth">
-			<div class="fos-card">
+			<div class="fos-card" id="register">
 				<h2>নতুন অ্যাকাউন্ট</h2>
 				<form method="post" class="fos-form">
 					<input type="hidden" name="fos_action" value="register">

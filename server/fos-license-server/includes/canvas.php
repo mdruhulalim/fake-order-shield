@@ -25,7 +25,13 @@ $fos_account = FOS_Store::account_url();
 		<nav>
 			<a href="<?php echo esc_url( home_url( '/#features' ) ); ?>">ফিচার</a>
 			<a href="<?php echo esc_url( home_url( '/#pricing' ) ); ?>">প্যাকেজ</a>
-			<a class="fos-btn fos-btn-primary fos-btn-sm" href="<?php echo esc_url( $fos_account ); ?>"><?php echo is_user_logged_in() ? 'অ্যাকাউন্ট' : 'লগইন / রেজিস্টার'; ?></a>
+			<a href="<?php echo esc_url( home_url( '/#how' ) ); ?>">কীভাবে</a>
+			<?php if ( is_user_logged_in() ) : ?>
+				<a class="fos-btn fos-btn-primary fos-btn-sm" href="<?php echo esc_url( $fos_account ); ?>">অ্যাকাউন্ট</a>
+			<?php else : ?>
+				<a href="<?php echo esc_url( $fos_account ); ?>">লগইন</a>
+				<a class="fos-btn fos-btn-primary fos-btn-sm" href="<?php echo esc_url( $fos_account . '#register' ); ?>">ফ্রি ট্রায়াল</a>
+			<?php endif; ?>
 		</nav>
 	</div>
 </header>
