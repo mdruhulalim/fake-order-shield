@@ -144,3 +144,7 @@ body.fos-site { margin: 0; font-family: "Hind Siliguri", system-ui, -apple-syste
 	.fos-section { padding: 56px 0; }
 	.fos-steps { gap: 28px; }
 }
+
+.fos-trial-card { border: 2px solid #a7f3d0; background: linear-gradient(0deg, #fff, var(--g50)); }
+.fos-inline { display: flex; gap: 10px; flex-wrap: wrap; }
+.fos-inline input[type=text] { flex: 1; min-width: 200px; margin-top: 0 !important; }

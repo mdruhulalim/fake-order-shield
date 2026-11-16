@@ -280,6 +280,45 @@ class FOS_Store {
 	}
 
 	/**
+	 * Free trial license: one per customer and one per domain, active right away.
+	 *
+	 * @param int    $user_id User.
+	 * @param string $domain  Domain or URL.
+	 * @return int|WP_Error Row id.
+	 */
+	public static function start_trial( $user_id, $domain ) {
+		global $wpdb;
+		$domain = self::domain( $domain );
+		if ( ! $domain || false === strpos( $domain, '.' ) ) {
+			return new WP_Error( 'domain', __( 'Please enter your website domain, e.g. myshop.com', 'fos-license-server' ) );
+		}
+		$t = self::table();
+		if ( $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $t WHERE user_id = %d AND method = 'trial'", $user_id ) ) ) { // phpcs:ignore
+			return new WP_Error( 'trial', __( 'You have already used your free trial.', 'fos-license-server' ) );
+		}
+		if ( $wpdb->get_var( $wpdb->prepare( "SELECT id FROM $t WHERE domain = %s AND status <> 'rejected'", $domain ) ) ) { // phpcs:ignore
+			return new WP_Error( 'trial', __( 'This domain already had a trial or a license.', 'fos-license-server' ) );
+		}
+		$now = time();
+		$wpdb->insert( // phpcs:ignore
+			$t,
+			array(
+				'user_id'     => (int) $user_id,
+				'license_key' => self::new_key(),
+				'months'      => 0,
+				'amount'      => 0,
+				'domain'      => $domain,
+				'method'      => 'trial',
+				'status'      => 'active',
+				'created_at'  => gmdate( 'Y-m-d H:i:s', $now ),
+				'approved_at' => gmdate( 'Y-m-d H:i:s', $now ),
+				'expires_at'  => gmdate( 'Y-m-d H:i:s', $now + max( 1, (int) self::opt( 'trial_days' ) ) * DAY_IN_SECONDS ),
+			)
+		);
+		return (int) $wpdb->insert_id;
+	}
+
+	/**
 	 * Approve a pending order: start or extend the license.
 	 *
 	 * @param int $id Order id.
@@ -300,7 +339,13 @@ class FOS_Store {
 		$base    = ( $target->expires_at && strtotime( $target->expires_at . ' UTC' ) > time() ) ? strtotime( $target->expires_at . ' UTC' ) : time();
 		$expires = gmdate( 'Y-m-d H:i:s', strtotime( '+' . (int) $row->months . ' months', $base ) );
 
-		$wpdb->update( self::table(), array( 'status' => 'active', 'expires_at' => $expires, 'approved_at' => $target->approved_at ? $target->approved_at : $now ), array( 'id' => $target->id ) ); // phpcs:ignore
+		$data = array( 'status' => 'active', 'expires_at' => $expires, 'approved_at' => $target->approved_at ? $target->approved_at : $now );
+		if ( 'trial' === $target->method ) {
+			// First payment on a trial key: the key becomes a normal paid license.
+			$data = array_merge( $data, array( 'method' => $row->method, 'months' => $row->months, 'amount' => $row->amount, 'expires_at' => gmdate( 'Y-m-d H:i:s', strtotime( '+' . (int) $row->months . ' months' ) ) ) );
+			$expires = $data['expires_at'];
+		}
+		$wpdb->update( self::table(), $data, array( 'id' => $target->id ) ); // phpcs:ignore
 		if ( $row->renewal_of ) {
 			$wpdb->update( self::table(), array( 'status' => 'applied', 'approved_at' => $now, 'expires_at' => $expires ), array( 'id' => $row->id ) ); // phpcs:ignore
 		}

@@ -107,7 +107,27 @@ class FOS_Front {
 			update_user_meta( $user_id, 'fos_phone', $phone );
 			wp_set_current_user( $user_id );
 			wp_set_auth_cookie( $user_id, true );
-			wp_safe_redirect( add_query_arg( 'fos', 'welcome', FOS_Store::account_url() ) );
+			$flag   = 'welcome';
+			$domain = sanitize_text_field( wp_unslash( $_POST['domain'] ?? '' ) );
+			if ( '' !== $domain ) {
+				$t    = FOS_Store::start_trial( $user_id, $domain );
+				$flag = is_wp_error( $t ) ? 'welcome' : 'trial';
+			}
+			wp_safe_redirect( add_query_arg( 'fos', $flag, FOS_Store::account_url() ) );
+			exit;
+		}
+
+		if ( 'trial' === $action ) {
+			if ( ! is_user_logged_in() || ! isset( $_POST['_fosnonce'] ) || ! wp_verify_nonce( sanitize_key( $_POST['_fosnonce'] ), 'fos_trial' ) ) {
+				self::$msg = array( 'error', __( 'Session expired. Please log in and try again.', 'fos-license-server' ) );
+				return;
+			}
+			$t = FOS_Store::start_trial( get_current_user_id(), sanitize_text_field( wp_unslash( $_POST['domain'] ?? '' ) ) );
+			if ( is_wp_error( $t ) ) {
+				self::$msg = array( 'error', $t->get_error_message() );
+				return;
+			}
+			wp_safe_redirect( add_query_arg( 'fos', 'trial', FOS_Store::account_url() ) );
 			exit;
 		}
 
@@ -184,7 +204,7 @@ class FOS_Front {
 						<a class="fos-btn fos-btn-primary" href="<?php echo esc_url( $account ); ?>"><?php echo esc_html( $trial ); ?> দিন ফ্রি ব্যবহার করুন</a>
 						<a class="fos-btn fos-btn-ghost" href="#pricing">প্যাকেজ দেখুন</a>
 					</div>
-					<p class="fos-note">কার্ড লাগবে না · ইনস্টলের পর <?php echo esc_html( $trial ); ?> দিন সব ফিচার ফ্রি</p>
+					<p class="fos-note">পেমেন্ট লাগবে না · অ্যাকাউন্ট খুললেই <?php echo esc_html( $trial ); ?> দিন সব ফিচার ফ্রি</p>
 				</div>
 				<div class="fos-hero-card" aria-hidden="true">
 					<div class="fos-mock-head"><span></span><span></span><span></span></div>
@@ -216,10 +236,10 @@ class FOS_Front {
 			<div class="fos-container">
 				<h2 class="fos-h2">কীভাবে শুরু করবেন</h2>
 				<ol class="fos-steps">
-					<li><b>অ্যাকাউন্ট খুলুন</b><span>ইমেইল দিয়ে ১ মিনিটে অ্যাকাউন্ট, প্লাগিন ডাউনলোড করুন।</span></li>
-					<li><b><?php echo esc_html( $trial ); ?> দিন ফ্রি</b><span>ইনস্টল করলেই সব ফিচার চালু, কোনো কী লাগবে না।</span></li>
+					<li><b>অ্যাকাউন্ট খুলুন</b><span>ইমেইল আর ডোমেইন দিয়ে ১ মিনিটে অ্যাকাউন্ট, সাথে ফ্রি ট্রায়াল কী।</span></li>
+					<li><b>প্লাগিন অ্যাক্টিভেট</b><span>প্লাগিন ডাউনলোড করে ইনস্টল করুন, কী দিন। <?php echo esc_html( $trial ); ?> দিন সব ফিচার ফ্রি।</span></li>
 					<li><b>প্যাকেজ নিন</b><span>bKash বা Nagad-এ পেমেন্ট করে TrxID দিন।</span></li>
-					<li><b>লাইসেন্স অ্যাক্টিভেট</b><span>অনুমোদনের পর অ্যাকাউন্ট থেকে কী কপি করে প্লাগিনে পেস্ট করুন।</span></li>
+					<li><b>চালু থাকবে</b><span>অনুমোদনের পর একই কী-তে প্যাকেজ চালু, কিছু বদলাতে হয় না।</span></li>
 				</ol>
 			</div>
 		</section>
@@ -250,7 +270,7 @@ class FOS_Front {
 		<section class="fos-section fos-soft">
 			<div class="fos-container fos-faq">
 				<h2 class="fos-h2">প্রশ্ন ও উত্তর</h2>
-				<details><summary>ফ্রি ট্রায়ালে কী কী পাব?</summary><p>ইনস্টলের পর <?php echo esc_html( $trial ); ?> দিন সব ফিচার চালু থাকে। এরপর লাইসেন্স অ্যাক্টিভেট না করলে প্রোটেকশন বন্ধ হয়, কিন্তু আপনার সেটিংস ও ডাটা মুছে যায় না।</p></details>
+				<details><summary>ফ্রি ট্রায়ালে কী কী পাব?</summary><p>অ্যাকাউন্ট খোলার সময় ডোমেইন দিলে একটি ট্রায়াল কী পাবেন, <?php echo esc_html( $trial ); ?> দিন সব ফিচার চালু থাকে। এরপর প্যাকেজ না নিলে প্রোটেকশন বন্ধ হয়, কিন্তু আপনার সেটিংস ও ডাটা মুছে যায় না।</p></details>
 				<details><summary>পেমেন্ট কীভাবে করব?</summary><p>bKash বা Nagad-এ Send Money করে অ্যাকাউন্ট পেজে নম্বর ও TrxID দিন। যাচাই করে সাধারণত কয়েক ঘণ্টার মধ্যে লাইসেন্স চালু হয়। লাইসেন্স কী আপনার অ্যাকাউন্টে দেখতে পাবেন।</p></details>
 				<details><summary>এক লাইসেন্স কয়টা সাইটে চলবে?</summary><p>একটি লাইসেন্স একটি ডোমেইনের জন্য। আরেকটি সাইটে চালাতে আরেকটি প্যাকেজ নিন।</p></details>
 				<details><summary>মেয়াদ শেষ হলে কী হবে?</summary><p>প্রোটেকশন বন্ধ হবে, ডাটা থাকবে। রিনিউ করলে আগের মতো সব চালু হয়ে যাবে। মেয়াদ থাকা অবস্থায় রিনিউ করলে বাকি দিনগুলো যোগ হয়।</p></details>
@@ -281,7 +301,9 @@ class FOS_Front {
 		}
 		$flag = isset( $_GET['fos'] ) ? sanitize_key( $_GET['fos'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		if ( 'welcome' === $flag ) {
-			echo '<div class="fos-alert fos-alert-success">' . esc_html__( 'Account created. Download the plugin below — you get a free trial as soon as you install it.', 'fos-license-server' ) . '</div>';
+			echo '<div class="fos-alert fos-alert-success">' . esc_html__( 'Account created. Start your free trial below to get a license key.', 'fos-license-server' ) . '</div>';
+		} elseif ( 'trial' === $flag ) {
+			echo '<div class="fos-alert fos-alert-success">' . esc_html( sprintf( 'আপনার %s দিনের ফ্রি ট্রায়াল চালু! নিচের লাইসেন্স কী কপি করুন, প্লাগিন ডাউনলোড করে ইনস্টল করুন, তারপর Fake Order Shield → Settings → License-এ কী দিয়ে Activate করুন।', FOS_Store::opt( 'trial_days' ) ) ) . '</div>';
 		} elseif ( 'ordered' === $flag ) {
 			echo '<div class="fos-alert fos-alert-success">' . esc_html__( 'Order received! We will check your payment and activate your license soon. Your license key will appear here on this page.', 'fos-license-server' ) . '</div>';
 		}
@@ -315,7 +337,8 @@ class FOS_Front {
 					<label>ইমেইল<input type="email" name="email" value="<?php echo $v( 'email' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>" required autocomplete="email"></label>
 					<label>মোবাইল<input type="tel" name="phone" value="<?php echo $v( 'phone' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>" placeholder="01XXXXXXXXX" autocomplete="tel"></label>
 					<label>পাসওয়ার্ড<input type="password" name="password" minlength="8" required autocomplete="new-password"></label>
-					<button class="fos-btn fos-btn-primary" type="submit">অ্যাকাউন্ট খুলুন</button>
+					<label>ওয়েবসাইটের ডোমেইন <small class="fos-muted">(<?php echo esc_html( FOS_Store::opt( 'trial_days' ) ); ?> দিন ফ্রি ট্রায়ালের জন্য)</small><input type="text" name="domain" value="<?php echo $v( 'domain' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>" placeholder="myshop.com"></label>
+					<button class="fos-btn fos-btn-primary" type="submit">অ্যাকাউন্ট খুলুন ও ফ্রি ট্রায়াল নিন</button>
 				</form>
 			</div>
 			<div class="fos-card">
@@ -352,6 +375,7 @@ class FOS_Front {
 			'rejected' => 'বাতিল',
 			'revoked'  => 'বন্ধ',
 			'applied'  => 'রিনিউ হয়েছে',
+			'trial'    => 'ফ্রি ট্রায়াল',
 		);
 		// phpcs:disable WordPress.Security.NonceVerification
 		$renew  = isset( $_GET['renew'] ) ? absint( $_GET['renew'] ) : 0;
@@ -369,6 +393,25 @@ class FOS_Front {
 			<?php endif; ?>
 		</div>
 
+		<?php
+		$had_trial = false;
+		foreach ( $rows as $r ) {
+			$had_trial = $had_trial || ( 'trial' === $r->method );
+		}
+		if ( ! $had_trial ) :
+			?>
+			<div class="fos-card fos-trial-card">
+				<h2><?php echo esc_html( FOS_Store::opt( 'trial_days' ) ); ?> দিন ফ্রি ট্রায়াল</h2>
+				<p class="fos-muted">আপনার ওয়েবসাইটের ডোমেইন দিন, সাথে সাথে একটি ট্রায়াল লাইসেন্স কী পাবেন। সব ফিচার চালু থাকবে, কোনো পেমেন্ট লাগবে না।</p>
+				<form method="post" class="fos-form fos-inline">
+					<input type="hidden" name="fos_action" value="trial">
+					<?php wp_nonce_field( 'fos_trial', '_fosnonce' ); ?>
+					<input type="text" name="domain" placeholder="myshop.com" required aria-label="ডোমেইন">
+					<button class="fos-btn fos-btn-primary" type="submit">ফ্রি ট্রায়াল শুরু করুন</button>
+				</form>
+			</div>
+		<?php endif; ?>
+
 		<div class="fos-card">
 			<h2>আমার লাইসেন্স</h2>
 			<?php if ( ! $rows ) : ?>
@@ -384,10 +427,10 @@ class FOS_Front {
 						<tr>
 							<td><?php echo esc_html( $r->domain ); ?></td>
 							<td><?php echo ( 'active' === $st || 'expired' === $st ) && $r->license_key ? '<code class="fos-key">' . esc_html( $r->license_key ) . '</code>' : ( $r->renewal_of ? '<span class="fos-muted">রিনিউ অর্ডার</span>' : '<span class="fos-muted">অনুমোদনের পর</span>' ); ?></td>
-							<td><?php echo esc_html( $r->months . ' মাস · ' . self::tk( $r->amount ) ); ?></td>
-							<td><span class="fos-pill fos-pill-<?php echo esc_attr( $st ); ?>"><?php echo esc_html( isset( $labels[ $st ] ) ? $labels[ $st ] : $st ); ?></span></td>
+							<td><?php echo 'trial' === $r->method ? esc_html( FOS_Store::opt( 'trial_days' ) . ' দিন · ফ্রি' ) : esc_html( $r->months . ' মাস · ' . self::tk( $r->amount ) ); ?></td>
+							<td><span class="fos-pill fos-pill-<?php echo esc_attr( $st ); ?>"><?php echo esc_html( ( 'trial' === $r->method && 'active' === $st ) ? $labels['trial'] : ( isset( $labels[ $st ] ) ? $labels[ $st ] : $st ) ); ?></span></td>
 							<td><?php echo $r->expires_at ? esc_html( get_date_from_gmt( $r->expires_at, 'd M Y' ) ) : '—'; ?></td>
-							<td><?php if ( ! $r->renewal_of && in_array( $st, array( 'active', 'expired' ), true ) ) : ?><a href="<?php echo esc_url( add_query_arg( 'renew', $r->id, FOS_Store::account_url() ) ); ?>#buy">রিনিউ</a><?php endif; ?></td>
+							<td><?php if ( ! $r->renewal_of && in_array( $st, array( 'active', 'expired' ), true ) ) : ?><a href="<?php echo esc_url( add_query_arg( 'renew', $r->id, FOS_Store::account_url() ) ); ?>#buy"><?php echo 'trial' === $r->method ? 'প্যাকেজ নিন' : 'রিনিউ'; ?></a><?php endif; ?></td>
 						</tr>
 					<?php endforeach; ?>
 					</tbody>
@@ -396,7 +439,10 @@ class FOS_Front {
 		</div>
 
 		<div class="fos-card" id="buy">
-			<h2><?php echo $renew_row ? esc_html( 'রিনিউ: ' . $renew_row->domain ) : 'প্যাকেজ কিনুন'; ?></h2>
+			<h2><?php echo $renew_row ? esc_html( ( 'trial' === $renew_row->method ? 'প্যাকেজ নিন: ' : 'রিনিউ: ' ) . $renew_row->domain ) : 'প্যাকেজ কিনুন'; ?></h2>
+			<?php if ( $renew_row && 'trial' === $renew_row->method ) : ?>
+				<p class="fos-muted">পেমেন্ট অনুমোদন হলে একই লাইসেন্স কী-তে প্যাকেজ চালু হবে, প্লাগিনে কিছু বদলাতে হবে না।</p>
+			<?php endif; ?>
 			<form method="post" class="fos-form">
 				<input type="hidden" name="fos_action" value="order">
 				<?php wp_nonce_field( 'fos_order', '_fosnonce' ); ?>

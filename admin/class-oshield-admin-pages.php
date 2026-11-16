@@ -860,7 +860,7 @@ class OShield_Admin_Pages {
 		$tabs['license'] = array(
 			'label' => __( 'License', 'order-shield' ),
 			'icon'  => 'dashicons-admin-network',
-			'intro' => __( 'Activate your license key to keep fake order protection running after the free trial.', 'order-shield' ),
+			'intro' => __( 'Fake order protection runs while a license key is active. New here? Create a free account to get a 3-day trial key.', 'order-shield' ),
 		);
 		$tabs['tools']   = array(
 			'label' => __( 'Tools', 'order-shield' ),
@@ -1103,7 +1103,7 @@ class OShield_Admin_Pages {
 					<?php wp_nonce_field( 'oshield_license' ); ?>
 					<div class="oshield-field">
 						<div class="oshield-field-label"><label for="oshield-license-key"><?php esc_html_e( 'License key', 'order-shield' ); ?></label>
-							<p class="description"><?php esc_html_e( 'You get the key by email after your payment is approved. It works on one domain.', 'order-shield' ); ?></p></div>
+							<p class="description"><?php esc_html_e( 'Copy it from your account on fakeordershield.com. One key works on one domain.', 'order-shield' ); ?></p></div>
 						<div class="oshield-field-control">
 							<input type="text" id="oshield-license-key" name="license_key" class="regular-text code oshield-input" value="<?php echo esc_attr( $d['key'] ); ?>" placeholder="FOS-XXXX-XXXX-XXXX-XXXX" autocomplete="off">
 							<button type="submit" name="do" value="check" class="button button-primary"><?php echo $d['key'] ? esc_html__( 'Check again', 'order-shield' ) : esc_html__( 'Activate', 'order-shield' ); ?></button>
@@ -1119,9 +1119,9 @@ class OShield_Admin_Pages {
 			</div>
 		</section>
 		<section class="oshield-section-card">
-			<header class="oshield-section-head"><div><h3><?php esc_html_e( 'Need a license or a renewal?', 'order-shield' ); ?></h3>
-				<p><?php esc_html_e( '1, 3, 6 or 12 months, paid by bKash or Nagad. When the trial or license ends, protection stops but your settings and data stay.', 'order-shield' ); ?></p></div>
-				<a class="button button-primary" href="<?php echo esc_url( $buy ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Buy / renew', 'order-shield' ); ?></a>
+			<header class="oshield-section-head"><div><h3><?php esc_html_e( 'Get a key', 'order-shield' ); ?></h3>
+				<p><?php esc_html_e( 'Create a free account for a 3-day trial key with all features. After that, take a 1, 3, 6 or 12 month package (bKash or Nagad) — the same key keeps working. When the key ends, protection stops but your settings and data stay.', 'order-shield' ); ?></p></div>
+				<a class="button button-primary" href="<?php echo esc_url( $buy ); ?>" target="_blank" rel="noopener"><?php echo OShield_License::data()['key'] ? esc_html__( 'Buy / renew', 'order-shield' ) : esc_html__( 'Get free trial key', 'order-shield' ); ?></a>
 			</header>
 		</section>
 		<?php

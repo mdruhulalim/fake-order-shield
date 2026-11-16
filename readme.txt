@@ -6,7 +6,7 @@ Tested up to: 6.8
 Requires PHP: 7.4
 WC requires at least: 6.0
 WC tested up to: 10.2
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -39,7 +39,7 @@ Fake order protection for Bangladeshi WooCommerce stores.
 
 Fake Order Shield only contacts outside services you switch on, plus its license server:
 
-* fakeordershield.com — sends this site's domain (and your license key, if entered) to start the free trial and check the license, at most twice a day.
+* fakeordershield.com — sends this site's domain and your license key to check the license, when you press Activate and at most twice a day after that.
 * Steadfast (portal.packzy.com) and Pathao (api-hermes.pathao.com) — to create and track parcels.
 * proxycheck.io — only when VPN block or country restriction is on, to check the visitor's IP.
 * The courier-ratio API URL you enter on the Fraud Check tab, if any.
@@ -49,6 +49,9 @@ Fake Order Shield only contacts outside services you switch on, plus its license
 Session replay uses rrweb (MIT License), bundled in assets/vendor/rrweb.
 
 == Changelog ==
+
+= 1.4.2 =
+* Free trial now comes as a 3-day trial key from your fakeordershield.com account (no more automatic trial without a key). Paying for a package extends the same key.
 
 = 1.4.1 =
 * License answers from fakeordershield.com are now signed and verified, and the license server address can no longer be changed from wp-config.

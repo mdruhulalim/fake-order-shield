@@ -167,7 +167,7 @@ class OShield_Admin {
 			return;
 		}
 		if ( ! OShield_License::active() ) {
-			echo '<div class="notice notice-error"><p>' . wp_kses_post( sprintf( /* translators: 1: settings link 2: buy link */ __( '<strong>Fake Order Shield:</strong> the free trial has ended, so fake order protection is off. Your data is safe. <a href="%1$s">Activate your license</a> or <a href="%2$s" target="_blank" rel="noopener">buy a package</a>.', 'order-shield' ), esc_url( admin_url( 'admin.php?page=order-shield-settings&tab=license' ) ), 'https://fakeordershield.com/account/' ) ) . '</p></div>';
+			echo '<div class="notice notice-error"><p>' . wp_kses_post( sprintf( /* translators: 1: settings link 2: buy link */ __( '<strong>Fake Order Shield:</strong> fake order protection is off. <a href="%1$s">Enter your license key</a> — no key yet? <a href="%2$s" target="_blank" rel="noopener">Create a free account</a> for a 3-day free trial key. Your settings and data are safe.', 'order-shield' ), esc_url( admin_url( 'admin.php?page=order-shield-settings&tab=license' ) ), 'https://fakeordershield.com/account/' ) ) . '</p></div>';
 		}
 		if ( in_array( oshield_opt( 'fraud_source' ), array( 'api', 'both' ), true ) && '' === trim( (string) oshield_opt( 'fraud_api_url' ) ) ) {
 			echo '<div class="notice notice-warning"><p>' . wp_kses_post( __( '<strong>Fake Order Shield:</strong> Fraud check is set to use a courier API, but no API URL is entered. Store history is used meanwhile.', 'order-shield' ) ) . '</p></div>';

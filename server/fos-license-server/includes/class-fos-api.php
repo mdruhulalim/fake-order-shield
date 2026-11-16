@@ -73,6 +73,7 @@ class FOS_API {
 			'domain'     => $row->domain,
 			'expires_at' => $row->expires_at ? gmdate( 'c', strtotime( $row->expires_at . ' UTC' ) ) : null,
 			'months'     => (int) $row->months,
+			'trial'      => 'trial' === $row->method,
 			'renew_url'  => FOS_Store::account_url(),
 		);
 		if ( $row->domain !== $domain ) {

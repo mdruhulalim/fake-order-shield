@@ -1,6 +1,6 @@
 <?php
 /**
- * License + free trial, checked against fakeordershield.com.
+ * License key (paid or free trial), checked against fakeordershield.com.
  *
  * Front-end requests only read the saved state (no HTTP). The server is asked
  * when an admin opens WordPress (at most every 12 hours) or presses Activate.
@@ -27,7 +27,7 @@ class OShield_License {
 	const PUBLIC_KEY = 'oJEiT5E+13bSwMtPkvhTopLVdu41ashtBqpgaZuuyQA=';
 
 	/**
-	 * Saved state: key, status, expires (unix), trial_ends (unix), message, checked (unix).
+	 * Saved state: key, status, expires (unix), trial (bool), message, checked (unix).
 	 *
 	 * @return array
 	 */
@@ -39,7 +39,7 @@ class OShield_License {
 				'key'        => '',
 				'status'     => '',
 				'expires'    => 0,
-				'trial_ends' => 0,
+				'trial'      => false,
 				'message'    => '',
 				'checked'    => 0,
 			)
@@ -75,37 +75,12 @@ class OShield_License {
 	}
 
 	/**
-	 * Seconds of trial left (0 when over).
-	 *
-	 * @return int
-	 */
-	public static function trial_left() {
-		$d    = self::data();
-		$ends = $d['trial_ends'] ? (int) $d['trial_ends'] : self::local_trial_end();
-		return max( 0, $ends - time() );
-	}
-
-	/**
-	 * Fallback trial end before the server has answered: 3 days from first use.
-	 *
-	 * @return int
-	 */
-	private static function local_trial_end() {
-		$first = (int) get_option( 'oshield_first_use' );
-		if ( ! $first ) {
-			$first = time();
-			add_option( 'oshield_first_use', $first );
-		}
-		return $first + 3 * DAY_IN_SECONDS;
-	}
-
-	/**
-	 * Features may run: licensed or still in trial.
+	 * Features may run: a paid or free-trial key is active.
 	 *
 	 * @return bool
 	 */
 	public static function active() {
-		return self::licensed() || self::trial_left() > 0;
+		return self::licensed();
 	}
 
 	/**
@@ -121,7 +96,7 @@ class OShield_License {
 			return $r;
 		}
 		$json = json_decode( wp_remote_retrieve_body( $r ), true );
-		if ( ! is_array( $json ) || ! self::verified( $path, $body, $json ) ) {
+		if ( ! is_array( $json ) || ! self::verified( $body, $json ) ) {
 			return new WP_Error( 'oshield_license', __( 'Could not verify the answer from the license server.', 'order-shield' ) );
 		}
 		return $json;
@@ -130,21 +105,16 @@ class OShield_License {
 	/**
 	 * Is this answer really from fakeordershield.com, about this request, and recent?
 	 *
-	 * @param string $path Endpoint.
-	 * @param array  $body What we sent.
-	 * @param array  $r    Answer.
+	 * @param array $body What we sent.
+	 * @param array $r    Answer.
 	 * @return bool
 	 */
-	private static function verified( $path, $body, $r ) {
+	private static function verified( $body, $r ) {
 		if ( empty( $r['sig'] ) || empty( $r['ts'] ) || abs( time() - (int) $r['ts'] ) > DAY_IN_SECONDS ) {
 			return false;
 		}
-		if ( 'trial' === $path ) {
-			$msg = 'trial|' . $body['domain'] . '|' . strtotime( (string) ( $r['trial_ends'] ?? '' ) ) . '|' . (int) $r['ts'];
-		} else {
-			$exp = ! empty( $r['expires_at'] ) ? strtotime( $r['expires_at'] ) : 0;
-			$msg = 'license|' . $body['license_key'] . '|' . $body['domain'] . '|' . ( $r['status'] ?? '' ) . '|' . $exp . '|' . (int) $r['ts'];
-		}
+		$exp = ! empty( $r['expires_at'] ) ? strtotime( $r['expires_at'] ) : 0;
+		$msg = 'license|' . $body['license_key'] . '|' . $body['domain'] . '|' . ( $r['status'] ?? '' ) . '|' . $exp . '|' . (int) $r['ts'];
 		$sig = base64_decode( (string) $r['sig'], true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
 		$pub = base64_decode( self::PUBLIC_KEY, true ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
 		if ( false === $sig || false === $pub || 64 !== strlen( $sig ) || 32 !== strlen( $pub ) ) {
@@ -154,16 +124,6 @@ class OShield_License {
 			return sodium_crypto_sign_verify_detached( $sig, $msg, $pub );
 		} catch ( Exception $e ) {
 			return false;
-		}
-	}
-
-	/**
-	 * Ask the server about the trial (starts it on first call for this domain).
-	 */
-	public static function sync_trial() {
-		$r = self::call( 'trial', array( 'domain' => self::domain() ) );
-		if ( ! is_wp_error( $r ) && ! empty( $r['trial_ends'] ) ) {
-			self::save( array( 'trial_ends' => strtotime( $r['trial_ends'] ) ) );
 		}
 	}
 
@@ -189,6 +149,7 @@ class OShield_License {
 				'key'     => $key,
 				'status'  => isset( $r['status'] ) ? sanitize_key( $r['status'] ) : 'invalid',
 				'expires' => ! empty( $r['expires_at'] ) ? strtotime( $r['expires_at'] ) : 0,
+				'trial'   => ! empty( $r['trial'] ),
 				'message' => isset( $r['message'] ) ? sanitize_text_field( $r['message'] ) : '',
 				'checked' => time(),
 			)
@@ -204,19 +165,14 @@ class OShield_License {
 	}
 
 	/**
-	 * Twice a day, when an admin is in wp-admin: refresh trial and license.
+	 * Twice a day, when an admin is in wp-admin: refresh the license.
 	 */
 	public static function maybe_refresh() {
-		if ( wp_doing_ajax() || ! current_user_can( 'manage_options' ) || get_transient( 'oshield_license_fresh' ) ) {
+		if ( wp_doing_ajax() || ! current_user_can( 'manage_options' ) || get_transient( 'oshield_license_fresh' ) || ! self::data()['key'] ) {
 			return;
 		}
 		set_transient( 'oshield_license_fresh', 1, 12 * HOUR_IN_SECONDS );
-		if ( ! self::data()['trial_ends'] ) {
-			self::sync_trial();
-		}
-		if ( self::data()['key'] ) {
-			self::check();
-		}
+		self::check();
 	}
 
 	/**
@@ -228,15 +184,13 @@ class OShield_License {
 		$d = self::data();
 		if ( self::licensed() ) {
 			$days = (int) ceil( ( $d['expires'] - time() ) / DAY_IN_SECONDS );
+			if ( $d['trial'] ) {
+				/* translators: %d days */
+				return array( 'medium', sprintf( _n( 'Free trial: %d day left', 'Free trial: %d days left', $days, 'order-shield' ), $days ) );
+			}
 			/* translators: %s date */
 			return array( $days <= 7 ? 'medium' : 'good', sprintf( __( 'Licensed until %s', 'order-shield' ), date_i18n( get_option( 'date_format' ), $d['expires'] ) ) );
 		}
-		$left = self::trial_left();
-		if ( $left > 0 ) {
-			$days = (int) ceil( $left / DAY_IN_SECONDS );
-			/* translators: %d days */
-			return array( 'medium', sprintf( _n( 'Free trial: %d day left', 'Free trial: %d days left', $days, 'order-shield' ), $days ) );
-		}
-		return array( 'risky', __( 'Protection off — activate license', 'order-shield' ) );
+		return array( 'risky', $d['key'] ? __( 'Protection off — renew license', 'order-shield' ) : __( 'Protection off — activate license', 'order-shield' ) );
 	}
 }

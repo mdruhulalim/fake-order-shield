@@ -152,8 +152,12 @@ class FOS_Admin {
 			echo '<tr><td>' . esc_html( $r->id ) . '</td>';
 			echo '<td>' . ( $u ? esc_html( $u->display_name ) . '<br><small>' . esc_html( $u->user_email ) . '<br>' . esc_html( get_user_meta( $u->ID, 'fos_phone', true ) ) . '</small>' : '—' ) . '</td>';
 			echo '<td>' . esc_html( $r->domain ) . ( $r->renewal_of ? '<br><small>Renewal of #' . esc_html( $r->renewal_of ) . '</small>' : '' ) . '</td>';
-			echo '<td>' . esc_html( $r->months ) . ' mo · ৳' . esc_html( number_format_i18n( $r->amount ) ) . '</td>';
-			echo '<td>' . esc_html( ucfirst( $r->method ) ) . '<br><code>' . esc_html( $r->trx_id ) . '</code><br><small>' . esc_html( $r->sender ) . '</small></td>';
+			if ( 'trial' === $r->method ) {
+				echo '<td>Free trial</td><td>—</td>';
+			} else {
+				echo '<td>' . esc_html( $r->months ) . ' mo · ৳' . esc_html( number_format_i18n( $r->amount ) ) . '</td>';
+				echo '<td>' . esc_html( ucfirst( $r->method ) ) . '<br><code>' . esc_html( $r->trx_id ) . '</code><br><small>' . esc_html( $r->sender ) . '</small></td>';
+			}
 			echo '<td><strong>' . esc_html( ucfirst( $st ) ) . '</strong>' . ( $r->last_check ? '<br><small>checked ' . esc_html( human_time_diff( strtotime( $r->last_check . ' UTC' ) ) ) . ' ago</small>' : '' ) . '</td>';
 			echo '<td>' . ( $r->expires_at ? esc_html( get_date_from_gmt( $r->expires_at, 'd M Y' ) ) : '—' ) . '</td>';
 			echo '<td><code>' . esc_html( $r->license_key ) . '</code></td><td>';
