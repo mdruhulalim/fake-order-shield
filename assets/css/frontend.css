@@ -1,0 +1,74 @@
+/* Order Shield — checkout */
+.oshield-phone-error {
+	display: block;
+	margin-top: 4px;
+	color: #d63638;
+	font-size: .875em;
+}
+.woocommerce-error .oshield-call,
+.oshield-call {
+	display: inline-block;
+	margin-left: 6px;
+	font-weight: 600;
+}
+
+.oshield-popup {
+	position: fixed;
+	inset: 0;
+	z-index: 999999;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px;
+	background: rgba(0, 0, 0, .55);
+}
+.oshield-popup-box {
+	position: relative;
+	width: 100%;
+	max-width: 380px;
+	padding: 28px 24px 22px;
+	border-radius: 10px;
+	background: #fff;
+	color: #1d2327;
+	text-align: center;
+	box-shadow: 0 10px 40px rgba(0, 0, 0, .25);
+	font-size: 15px;
+	line-height: 1.5;
+}
+.oshield-popup-box h3 { margin: 8px 0 6px; font-size: 19px; }
+.oshield-popup-close {
+	position: absolute;
+	top: 6px;
+	right: 10px;
+	border: 0;
+	background: none;
+	font-size: 26px;
+	line-height: 1;
+	color: #787c82;
+	cursor: pointer;
+	padding: 4px;
+}
+.oshield-popup-icon {
+	width: 48px;
+	height: 48px;
+	margin: 0 auto;
+	border-radius: 50%;
+	background: #e7f5ea;
+	color: #00a32a;
+	font-size: 24px;
+	font-weight: 700;
+	line-height: 48px;
+}
+.oshield-popup-icon-block { background: #fcf0f1; color: #d63638; }
+.oshield-popup-text { margin: 0 0 14px; }
+.oshield-popup-call,
+.oshield-popup-call:hover {
+	display: inline-block;
+	margin-top: 4px;
+	padding: 10px 18px;
+	border-radius: 6px;
+	background: #1d2327;
+	color: #fff !important;
+	text-decoration: none !important;
+	font-weight: 600;
+}
