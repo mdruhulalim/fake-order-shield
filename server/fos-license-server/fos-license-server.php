@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       FOS License Server
  * Description:       Sells Fake Order Shield licenses: landing page, customer accounts, 1/3/6/12-month packages paid by bKash/Nagad (manual approval) and the license API the plugin talks to.
- * Version:           1.2.0
+ * Version:           1.2.1
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            Branding Solutions BD
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'FOS_LS_VERSION', '1.2.0' );
+define( 'FOS_LS_VERSION', '1.2.1' );
 define( 'FOS_LS_FILE', __FILE__ );
 define( 'FOS_LS_DIR', plugin_dir_path( __FILE__ ) );
 define( 'FOS_LS_URL', plugin_dir_url( __FILE__ ) );

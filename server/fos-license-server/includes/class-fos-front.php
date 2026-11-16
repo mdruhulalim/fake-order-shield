@@ -167,6 +167,22 @@ class FOS_Front {
 	}
 
 	/**
+	 * WhatsApp chat link for the support number (BD 01XXXXXXXXX → 8801XXXXXXXXX).
+	 *
+	 * @return string Empty when no number is set.
+	 */
+	private static function wa_link() {
+		$n = preg_replace( '/[^0-9]/', '', FOS_Store::opt( 'support' ) );
+		if ( '' === $n ) {
+			return '';
+		}
+		if ( 11 === strlen( $n ) && '0' === $n[0] ) {
+			$n = '88' . $n;
+		}
+		return 'https://wa.me/' . $n . '?text=' . rawurlencode( 'আসসালামু আলাইকুম, Fake Order Shield নিয়ে সাহায্য দরকার।' );
+	}
+
+	/**
 	 * Landing page.
 	 *
 	 * @return string
@@ -178,10 +194,10 @@ class FOS_Front {
 		$trial    = (int) FOS_Store::opt( 'trial_days' );
 		$support  = FOS_Store::opt( 'support' );
 		$labels   = array(
-			1  => '১ মাস',
-			3  => '৩ মাস',
-			6  => '৬ মাস',
-			12 => '১২ মাস',
+			1  => '1 মাস',
+			3  => '3 মাস',
+			6  => '6 মাস',
+			12 => '12 মাস',
 		);
 		$pillars  = array(
 			array(
@@ -189,7 +205,7 @@ class FOS_Front {
 				'আটকায়',
 				'চেকআউটেই ফেক অর্ডার থামে',
 				array(
-					array( 'smartphone', 'ফোন নম্বর যাচাই', 'শুধু সঠিক ১১ সংখ্যার বাংলাদেশি নম্বর। বাংলা সংখ্যা ও +88 নিজেই ঠিক হয়।' ),
+					array( 'smartphone', 'ফোন নম্বর যাচাই', 'শুধু সঠিক 11 সংখ্যার বাংলাদেশি নম্বর। বাংলা সংখ্যা ও +88 নিজেই ঠিক হয়।' ),
 					array( 'dismiss', 'ব্লক লিস্ট', 'ফোন, IP, ডিভাইস বা ইমেইল ব্লক। একই ডিভাইসের সব ব্রাউজার আটকায়।' ),
 					array( 'performance', 'অটো ব্লক ও রিপিট ব্লকার', 'অল্প সময়ে অনেক অর্ডার বা বারবার অর্ডার নিজেই আটকায়।' ),
 					array( 'admin-site-alt3', 'VPN ও দেশ ব্লক', 'VPN বা বিদেশ থেকে আসা সন্দেহজনক অর্ডার বন্ধ।' ),
@@ -234,7 +250,7 @@ class FOS_Front {
 					</div>
 					<ul class="fos-trust">
 						<li><span class="dashicons dashicons-yes-alt"></span> কোনো পেমেন্ট লাগবে না</li>
-						<li><span class="dashicons dashicons-yes-alt"></span> ২ মিনিটে সেটআপ</li>
+						<li><span class="dashicons dashicons-yes-alt"></span> 2 মিনিটে সেটআপ</li>
 						<li><span class="dashicons dashicons-yes-alt"></span> বাংলায় সাপোর্ট</li>
 					</ul>
 				</div>
@@ -244,13 +260,13 @@ class FOS_Front {
 						<div class="fos-app-bar"><span></span><span></span><span></span><b>Fake Order Shield</b></div>
 						<div class="fos-app-body">
 							<div class="fos-app-stats">
-								<div><small>আজ আটকানো</small><strong>১২</strong></div>
-								<div><small>অনলাইন এখন</small><strong>৮</strong></div>
-								<div><small>ইনকমপ্লিট</small><strong>৫</strong></div>
+								<div><small>আজ আটকানো</small><strong>12</strong></div>
+								<div><small>অনলাইন এখন</small><strong>8</strong></div>
+								<div><small>ইনকমপ্লিট</small><strong>5</strong></div>
 							</div>
-							<div class="fos-app-row is-bad"><span class="dashicons dashicons-dismiss"></span><div><b>অর্ডার আটকানো হয়েছে</b><small>017XXXXXXXX · ডেলিভারি হার ২০%</small></div><em>ব্লক</em></div>
-							<div class="fos-app-row is-good"><span class="dashicons dashicons-yes"></span><div><b>অর্ডার গ্রহণ</b><small>018XXXXXXXX · ডেলিভারি হার ১০০%</small></div><em>আসল</em></div>
-							<div class="fos-app-row is-warn"><span class="dashicons dashicons-phone"></span><div><b>ইনকমপ্লিট অর্ডার</b><small>019XXXXXXXX · ৳৮৯৯ কার্টে</small></div><em>কল করুন</em></div>
+							<div class="fos-app-row is-bad"><span class="dashicons dashicons-dismiss"></span><div><b>অর্ডার আটকানো হয়েছে</b><small>017XXXXXXXX · ডেলিভারি হার 20%</small></div><em>ব্লক</em></div>
+							<div class="fos-app-row is-good"><span class="dashicons dashicons-yes"></span><div><b>অর্ডার গ্রহণ</b><small>018XXXXXXXX · ডেলিভারি হার 100%</small></div><em>আসল</em></div>
+							<div class="fos-app-row is-warn"><span class="dashicons dashicons-phone"></span><div><b>ইনকমপ্লিট অর্ডার</b><small>019XXXXXXXX · ৳899 কার্টে</small></div><em>কল করুন</em></div>
 						</div>
 					</div>
 					<div class="fos-float fos-float-a"><span class="dashicons dashicons-shield-alt"></span> VPN অর্ডার আটকানো</div>
@@ -283,7 +299,7 @@ class FOS_Front {
 					<label>প্রতি ফেক অর্ডারে খরচ (৳) <output data-for="cost">150</output><input type="range" min="50" max="400" step="10" value="150" data-k="cost"></label>
 					<div class="fos-calc-out">
 						<div><small>মাসে আনুমানিক ক্ষতি</small><strong data-out="loss">৳20,250</strong></div>
-						<div><small>Fake Order Shield (৬ মাসের প্যাকেজে)</small><strong>৳<?php echo esc_html( number_format_i18n( $six_pm ) ); ?>/মাস</strong></div>
+						<div><small>Fake Order Shield (6 মাসের প্যাকেজে)</small><strong>৳<?php echo esc_html( number_format_i18n( $six_pm ) ); ?>/মাস</strong></div>
 					</div>
 					<p class="fos-calc-note" data-out="note"></p>
 					<a class="fos-btn fos-btn-primary fos-btn-block" href="<?php echo esc_url( $signup ); ?>">ফ্রি ট্রায়ালে নিজেই দেখুন</a>
@@ -314,11 +330,11 @@ class FOS_Front {
 		<section class="fos-section fos-dark" id="how">
 			<div class="fos-container">
 				<span class="fos-eyebrow fos-center fos-eyebrow-light">শুরু করা সহজ</span>
-				<h2 class="fos-h2 fos-light">৩ ধাপে চালু, আজকেই</h2>
+				<h2 class="fos-h2 fos-light">3 ধাপে চালু, আজকেই</h2>
 				<div class="fos-steps2">
-					<div><span>১</span><h3>অ্যাকাউন্ট খুলুন</h3><p>ইমেইল আর ডোমেইন দিন। সাথে সাথে <?php echo esc_html( $trial ); ?> দিনের ফ্রি ট্রায়াল কী পাবেন।</p></div>
-					<div><span>২</span><h3>প্লাগিন অ্যাক্টিভেট করুন</h3><p>প্লাগিন ইনস্টল করে কী দিন, একটা প্রোটেকশন লেভেল বেছে নিন। ব্যস, চালু।</p></div>
-					<div><span>৩</span><h3>পছন্দ হলে প্যাকেজ নিন</h3><p>bKash বা Nagad-এ পেমেন্ট করুন। একই কী-তে চলতে থাকবে, কিছু বদলাতে হবে না।</p></div>
+					<div><span>1</span><h3>অ্যাকাউন্ট খুলুন</h3><p>ইমেইল আর ডোমেইন দিন। সাথে সাথে <?php echo esc_html( $trial ); ?> দিনের ফ্রি ট্রায়াল কী পাবেন।</p></div>
+					<div><span>2</span><h3>প্লাগিন অ্যাক্টিভেট করুন</h3><p>প্লাগিন ইনস্টল করে কী দিন, একটা প্রোটেকশন লেভেল বেছে নিন। ব্যস, চালু।</p></div>
+					<div><span>3</span><h3>পছন্দ হলে প্যাকেজ নিন</h3><p>bKash বা Nagad-এ পেমেন্ট করুন। একই কী-তে চলতে থাকবে, কিছু বদলাতে হবে না।</p></div>
 				</div>
 				<div class="fos-center"><a class="fos-btn fos-btn-glow" href="<?php echo esc_url( $signup ); ?>">এখনই ফ্রি শুরু করুন</a></div>
 			</div>
@@ -341,7 +357,7 @@ class FOS_Front {
 							<div class="fos-plan-price"><?php echo esc_html( self::tk( $price ) ); ?></div>
 							<p class="fos-plan-per">মাসে <?php echo esc_html( self::tk( round( $price / $m ) ) ); ?></p>
 							<?php if ( $save > 0 ) : ?><span class="fos-save"><?php echo esc_html( $save ); ?>% সাশ্রয়</span><?php else : ?><span class="fos-save is-empty">&nbsp;</span><?php endif; ?>
-							<ul><li>সব ফিচার</li><li>১টি ডোমেইন</li><li>আপডেট ও সাপোর্ট</li></ul>
+							<ul><li>সব ফিচার</li><li>1টি ডোমেইন</li><li>আপডেট ও সাপোর্ট</li></ul>
 							<a class="fos-btn <?php echo $pop ? 'fos-btn-primary' : 'fos-btn-ghost'; ?> fos-btn-block" href="<?php echo esc_url( add_query_arg( 'months', $m, $account ) ); ?>#buy"><?php echo esc_html( $labels[ $m ] ); ?> নিন</a>
 						</div>
 					<?php endforeach; ?>
@@ -365,9 +381,9 @@ class FOS_Front {
 		<section class="fos-final2">
 			<div class="fos-container">
 				<h2>পরের ফেক অর্ডারটা আসার আগেই চালু করুন</h2>
-				<p><?php echo esc_html( $trial ); ?> দিন ফ্রি · কোনো পেমেন্ট লাগবে না · ২ মিনিটে সেটআপ</p>
+				<p><?php echo esc_html( $trial ); ?> দিন ফ্রি · কোনো পেমেন্ট লাগবে না · 2 মিনিটে সেটআপ</p>
 				<a class="fos-btn fos-btn-light" href="<?php echo esc_url( $signup ); ?>">ফ্রি ট্রায়াল শুরু করুন</a>
-				<?php if ( $support ) : ?><p class="fos-final-help">ইনস্টলে সাহায্য লাগলে কল করুন: <a href="tel:<?php echo esc_attr( preg_replace( '/[^0-9+]/', '', $support ) ); ?>"><?php echo esc_html( $support ); ?></a></p><?php endif; ?>
+				<?php if ( $support ) : ?><p class="fos-final-help">ইনস্টলে সাহায্য লাগলে <a class="fos-wa" href="<?php echo esc_url( self::wa_link() ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-whatsapp"></span> WhatsApp-এ মেসেজ করুন: <?php echo esc_html( $support ); ?></a></p><?php endif; ?>
 			</div>
 		</section>
 
@@ -577,7 +593,7 @@ class FOS_Front {
 				<button class="fos-btn fos-btn-primary" type="submit">অর্ডার করুন</button>
 			</form>
 			<?php if ( FOS_Store::opt( 'support' ) ) : ?>
-				<p class="fos-muted">প্লাগিন ইনস্টল বা লাইসেন্সে সমস্যা হলে কল করুন: <?php echo esc_html( FOS_Store::opt( 'support' ) ); ?></p>
+				<p class="fos-muted">প্লাগিন ইনস্টল বা লাইসেন্সে সমস্যা হলে <a class="fos-wa" href="<?php echo esc_url( self::wa_link() ); ?>" target="_blank" rel="noopener"><span class="dashicons dashicons-whatsapp"></span> WhatsApp-এ মেসেজ করুন: <?php echo esc_html( FOS_Store::opt( 'support' ) ); ?></a></p>
 			<?php endif; ?>
 		</div>
 		<?php

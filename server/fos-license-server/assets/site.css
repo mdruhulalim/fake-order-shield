@@ -296,3 +296,9 @@ body.fos-site { margin: 0; font-family: "Hind Siliguri", system-ui, -apple-syste
 	.fos-sticky-cta { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.95); backdrop-filter: blur(8px); border-top: 1px solid var(--b); }
 	body.fos-site { padding-bottom: 72px; }
 }
+
+/* WhatsApp support link */
+.fos-wa { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; text-decoration: none; }
+.fos-wa .dashicons { color: #25d366; }
+.fos-final-help .fos-wa { background: #25d366; color: #fff !important; padding: 10px 18px; border-radius: 999px; margin: 6px 0 0 6px; }
+.fos-final-help .fos-wa .dashicons { color: #fff; }
