@@ -1,0 +1,67 @@
+name: Release
+
+# Every push to main: read the plugin version from order-shield.php and,
+# for any version that has no tag yet, create the tag and a GitHub Release
+# with an installable ZIP. Older versions in the history are back-filled.
+# To release: bump "Version" + OSHIELD_VERSION, add a changelog entry in
+# readme.txt, push to main.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create missing tags and releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          declare -A seen
+          # Oldest first, so releases appear in order.
+          for sha in $(git log --reverse --format=%H -- order-shield.php); do
+            ver=$(git show "$sha:order-shield.php" | sed -n 's/^[ *]*Version:[[:space:]]*\([0-9][0-9.]*\).*/\1/p' | head -1)
+            [ -n "$ver" ] || continue
+            seen[$ver]=$sha   # last commit carrying this version wins
+          done
+
+          for ver in $(printf '%s\n' "${!seen[@]}" | sort -V); do
+            tag="v$ver"
+            sha="${seen[$ver]}"
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "$tag already released"; continue
+            fi
+            echo "Releasing $tag at $sha"
+
+            zipdir=$(mktemp -d)
+            git archive --format=tar --prefix=order-shield/ "$sha" \
+              ':(exclude).github' ':(exclude).gitignore' ':(exclude)README.md' | tar x -C "$zipdir"
+            (cd "$zipdir" && zip -qr "fake-order-shield-$ver.zip" order-shield)
+
+            # Changelog section for this version from readme.txt.
+            notes=$(git show "$sha:readme.txt" | awk -v v="= $ver =" '
+              $0==v {on=1; next}
+              on && /^= [0-9]/ {exit}
+              on && /^== / {exit}
+              on {print}')
+            [ -n "$notes" ] || notes="Version $ver"
+            printf '%s\n\n**Install / update:** Plugins → Add New → Upload Plugin → choose the ZIP → "Replace current with uploaded".\n' "$notes" > "$zipdir/notes.md"
+
+            gh release create "$tag" "$zipdir/fake-order-shield-$ver.zip" \
+              --target "$sha" --title "Fake Order Shield $ver" --notes-file "$zipdir/notes.md"
+          done
+
+          # Mark the newest version as latest.
+          newest=$(printf '%s\n' "${!seen[@]}" | sort -V | tail -1)
+          gh release edit "v$newest" --latest || true
