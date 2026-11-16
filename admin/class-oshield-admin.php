@@ -34,6 +34,8 @@ class OShield_Admin {
 		add_action( 'admin_post_oshield_save_settings', array( __CLASS__, 'save_settings' ) );
 		add_action( 'admin_post_oshield_tools', array( __CLASS__, 'tools' ) );
 		add_action( 'admin_post_oshield_preset', array( __CLASS__, 'apply_preset' ) );
+		add_action( 'admin_post_oshield_license', array( __CLASS__, 'license_action' ) );
+		add_action( 'admin_init', array( 'OShield_License', 'maybe_refresh' ) );
 		add_action( 'admin_post_oshield_block_add', array( __CLASS__, 'block_add' ) );
 
 		$ajax = array( 'report', 'block_toggle', 'send_courier', 'refresh_courier', 'replay', 'live', 'journey', 'live_events' );
@@ -164,6 +166,9 @@ class OShield_Admin {
 		if ( ! $screen || false === strpos( $screen->id, 'order-shield' ) ) {
 			return;
 		}
+		if ( ! OShield_License::active() ) {
+			echo '<div class="notice notice-error"><p>' . wp_kses_post( sprintf( /* translators: 1: settings link 2: buy link */ __( '<strong>Fake Order Shield:</strong> the free trial has ended, so fake order protection is off. Your data is safe. <a href="%1$s">Activate your license</a> or <a href="%2$s" target="_blank" rel="noopener">buy a package</a>.', 'order-shield' ), esc_url( admin_url( 'admin.php?page=order-shield-settings&tab=license' ) ), 'https://fakeordershield.com/account/' ) ) . '</p></div>';
+		}
 		if ( in_array( oshield_opt( 'fraud_source' ), array( 'api', 'both' ), true ) && '' === trim( (string) oshield_opt( 'fraud_api_url' ) ) ) {
 			echo '<div class="notice notice-warning"><p>' . wp_kses_post( __( '<strong>Fake Order Shield:</strong> Fraud check is set to use a courier API, but no API URL is entered. Store history is used meanwhile.', 'order-shield' ) ) . '</p></div>';
 		}
@@ -200,6 +205,27 @@ class OShield_Admin {
 		$back = isset( $_POST['back'] ) && 'dashboard' === $_POST['back'] ? admin_url( 'admin.php?page=order-shield' ) : admin_url( 'admin.php?page=order-shield-settings&tab=checkout' );
 		$ok   = OShield_Settings::apply_preset( $id );
 		wp_safe_redirect( add_query_arg( 'oshield_preset', $ok ? $id : 'error', $back ) );
+		exit;
+	}
+
+	/**
+	 * Activate / refresh / remove the license key.
+	 */
+	public static function license_action() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Sorry, you are not allowed to do that.', 'order-shield' ) );
+		}
+		check_admin_referer( 'oshield_license' );
+		$do = isset( $_POST['do'] ) ? sanitize_key( $_POST['do'] ) : '';
+		if ( 'remove' === $do ) {
+			OShield_License::deactivate();
+			$msg = __( 'License key removed from this site.', 'order-shield' );
+		} else {
+			$key = isset( $_POST['license_key'] ) ? sanitize_text_field( wp_unslash( $_POST['license_key'] ) ) : '';
+			$r   = OShield_License::check( $key );
+			$msg = is_wp_error( $r ) ? $r->get_error_message() : ( ! empty( $r['message'] ) ? $r['message'] : '' );
+		}
+		wp_safe_redirect( add_query_arg( 'oshield_msg', rawurlencode( $msg ), admin_url( 'admin.php?page=order-shield-settings&tab=license' ) ) );
 		exit;
 	}
 
@@ -315,6 +341,9 @@ class OShield_Admin {
 		check_ajax_referer( 'oshield_admin', 'nonce' );
 		if ( ! current_user_can( self::cap() ) ) {
 			wp_send_json_error( array( 'message' => __( 'Permission denied.', 'order-shield' ) ), 403 );
+		}
+		if ( ! OShield_License::active() ) {
+			wp_send_json_error( array( 'message' => __( 'Fake Order Shield is not active. Please activate your license.', 'order-shield' ) ), 403 );
 		}
 	}
 

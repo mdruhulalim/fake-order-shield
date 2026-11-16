@@ -176,7 +176,7 @@ body.oshield-modal-open { overflow: hidden; }
 .oshield-topbar {
 	display: flex;
 	align-items: center;
-	gap: 18px;
+	gap: 12px;
 	flex-wrap: wrap;
 	background: #fff;
 	border: 1px solid var(--os-border);
@@ -201,12 +201,17 @@ body.oshield-modal-open { overflow: hidden; }
 .oshield-brand-text { display: flex; flex-direction: column; line-height: 1.2; }
 .oshield-brand-text strong { font-size: 15px; }
 .oshield-brand-text small { color: var(--os-muted); font-size: 11px; }
-.oshield-pagenav { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
+.oshield-pagenav { display: flex; flex-wrap: wrap; gap: 2px; margin-left: auto; }
+.oshield-license-pill { text-decoration: none; padding: 5px 12px; }
+.oshield-wrap a.oshield-pill-good { color: #047857; }
+.oshield-wrap a.oshield-pill-medium { color: #b45309; }
+.oshield-wrap a.oshield-pill-risky { color: #b91c1c; }
+.oshield-license-pill .dashicons { font-size: 15px; width: 15px; height: 15px; }
 .oshield-pagenav a {
 	display: inline-flex;
 	align-items: center;
 	gap: 6px;
-	padding: 7px 12px;
+	padding: 7px 10px;
 	border-radius: 8px;
 	color: var(--os-text-2);
 	text-decoration: none;

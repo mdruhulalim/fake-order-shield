@@ -46,7 +46,7 @@ jobs:
 
             zipdir=$(mktemp -d)
             git archive --format=tar --prefix=order-shield/ "$sha" \
-              ':(exclude).github' ':(exclude).gitignore' ':(exclude).graphifyignore' ':(exclude)README.md' ':(exclude)CLAUDE.md' | tar x -C "$zipdir"
+              ':(exclude).github' ':(exclude).gitignore' ':(exclude).graphifyignore' ':(exclude)README.md' ':(exclude)CLAUDE.md' ':(exclude)server' | tar x -C "$zipdir"
             (cd "$zipdir" && zip -qr "fake-order-shield-$ver.zip" order-shield)
 
             # Changelog section for this version from readme.txt.

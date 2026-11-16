@@ -42,12 +42,15 @@ class OShield_Admin_Pages {
 		echo '<div class="wrap oshield-wrap">';
 		echo '<div class="oshield-topbar">';
 		echo '<a class="oshield-brand" href="' . esc_url( admin_url( 'admin.php?page=order-shield' ) ) . '"><span class="oshield-logo"><span class="dashicons dashicons-shield"></span></span><span class="oshield-brand-text"><strong>Fake Order Shield</strong><small>v' . esc_html( OSHIELD_VERSION ) . '</small></span></a>';
+		$badge = OShield_License::badge();
+		echo '<a class="oshield-license-pill oshield-pill oshield-pill-' . esc_attr( $badge[0] ) . '" href="' . esc_url( admin_url( 'admin.php?page=order-shield-settings&tab=license' ) ) . '"><span class="dashicons dashicons-admin-network"></span> ' . esc_html( $badge[1] ) . '</a>';
 		echo '<nav class="oshield-pagenav" aria-label="' . esc_attr__( 'Fake Order Shield pages', 'order-shield' ) . '">';
 		foreach ( $pages as $slug => $p ) {
 			$is = $slug === $current;
 			echo '<a href="' . esc_url( admin_url( 'admin.php?page=' . $slug ) ) . '" class="' . ( $is ? 'is-current' : '' ) . '"' . ( $is ? ' aria-current="page"' : '' ) . '><span class="dashicons ' . esc_attr( $p[1] ) . '"></span><span>' . esc_html( $p[0] ) . '</span></a>';
 		}
-		echo '</nav></div>';
+		echo '</nav>';
+		echo '</div>';
 
 		echo '<h1 class="wp-heading-inline">' . esc_html( $title ) . '</h1>';
 		if ( $action ) {
@@ -582,6 +585,8 @@ class OShield_Admin_Pages {
 		if ( '' !== $phone ) {
 			if ( ! class_exists( 'WooCommerce' ) ) {
 				self::notice( __( 'WooCommerce is not active.', 'order-shield' ), 'error' );
+			} elseif ( ! OShield_License::active() ) {
+				self::notice( __( 'Fraud check is off until you activate your license.', 'order-shield' ), 'error' );
 			} else {
 				$report = OShield_Fraud::report( $phone, ! empty( $_GET['fresh'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				echo '<div class="postbox oshield-search-result"><div class="inside">';
@@ -838,7 +843,7 @@ class OShield_Admin_Pages {
 	public static function settings() {
 		$schema = OShield_Settings::schema();
 		$tab    = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'general'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( ! isset( $schema[ $tab ] ) && 'tools' !== $tab ) {
+		if ( ! isset( $schema[ $tab ] ) && ! in_array( $tab, array( 'tools', 'license' ), true ) ) {
 			$tab = 'general';
 		}
 
@@ -851,8 +856,13 @@ class OShield_Admin_Pages {
 		}
 		self::preset_notice();
 
-		$tabs          = $schema;
-		$tabs['tools'] = array(
+		$tabs            = $schema;
+		$tabs['license'] = array(
+			'label' => __( 'License', 'order-shield' ),
+			'icon'  => 'dashicons-admin-network',
+			'intro' => __( 'Activate your license key to keep fake order protection running after the free trial.', 'order-shield' ),
+		);
+		$tabs['tools']   = array(
 			'label' => __( 'Tools', 'order-shield' ),
 			'icon'  => 'dashicons-admin-tools',
 			'intro' => __( 'Import and export your block list and settings, and keep the database healthy.', 'order-shield' ),
@@ -882,8 +892,8 @@ class OShield_Admin_Pages {
 		}
 		echo '</div></div>';
 
-		if ( 'tools' === $tab ) {
-			self::tools_tab();
+		if ( 'tools' === $tab || 'license' === $tab ) {
+			'tools' === $tab ? self::tools_tab() : self::license_tab();
 			echo '</div></div></div>';
 			return;
 		}
@@ -1072,6 +1082,49 @@ class OShield_Admin_Pages {
 		}
 
 		echo '</div></div>';
+	}
+
+	/**
+	 * License tab.
+	 */
+	private static function license_tab() {
+		$d     = OShield_License::data();
+		$badge = OShield_License::badge();
+		$buy   = 'https://fakeordershield.com/account/';
+		?>
+		<section class="oshield-section-card">
+			<header class="oshield-section-head"><div><h3><?php esc_html_e( 'Status', 'order-shield' ); ?></h3>
+				<p><?php echo esc_html( sprintf( /* translators: %s domain */ __( 'Domain: %s', 'order-shield' ), OShield_License::domain() ) ); ?></p></div>
+				<span class="oshield-pill oshield-pill-<?php echo esc_attr( $badge[0] ); ?>"><?php echo esc_html( $badge[1] ); ?></span>
+			</header>
+			<div class="oshield-section-body">
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+					<input type="hidden" name="action" value="oshield_license">
+					<?php wp_nonce_field( 'oshield_license' ); ?>
+					<div class="oshield-field">
+						<div class="oshield-field-label"><label for="oshield-license-key"><?php esc_html_e( 'License key', 'order-shield' ); ?></label>
+							<p class="description"><?php esc_html_e( 'You get the key by email after your payment is approved. It works on one domain.', 'order-shield' ); ?></p></div>
+						<div class="oshield-field-control">
+							<input type="text" id="oshield-license-key" name="license_key" class="regular-text code oshield-input" value="<?php echo esc_attr( $d['key'] ); ?>" placeholder="FOS-XXXX-XXXX-XXXX-XXXX" autocomplete="off">
+							<button type="submit" name="do" value="check" class="button button-primary"><?php echo $d['key'] ? esc_html__( 'Check again', 'order-shield' ) : esc_html__( 'Activate', 'order-shield' ); ?></button>
+							<?php if ( $d['key'] ) : ?>
+								<button type="submit" name="do" value="remove" class="button-link oshield-bad"><?php esc_html_e( 'Remove key', 'order-shield' ); ?></button>
+							<?php endif; ?>
+							<?php if ( $d['message'] ) : ?>
+								<p class="description"><?php echo esc_html( $d['message'] ); ?><?php echo $d['checked'] ? ' · ' . esc_html( sprintf( /* translators: %s time */ __( 'checked %s ago', 'order-shield' ), human_time_diff( $d['checked'] ) ) ) : ''; ?></p>
+							<?php endif; ?>
+						</div>
+					</div>
+				</form>
+			</div>
+		</section>
+		<section class="oshield-section-card">
+			<header class="oshield-section-head"><div><h3><?php esc_html_e( 'Need a license or a renewal?', 'order-shield' ); ?></h3>
+				<p><?php esc_html_e( '1, 3, 6 or 12 months, paid by bKash or Nagad. When the trial or license ends, protection stops but your settings and data stay.', 'order-shield' ); ?></p></div>
+				<a class="button button-primary" href="<?php echo esc_url( $buy ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Buy / renew', 'order-shield' ); ?></a>
+			</header>
+		</section>
+		<?php
 	}
 
 	/**
