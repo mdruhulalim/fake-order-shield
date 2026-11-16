@@ -415,7 +415,7 @@ class FOS_Front {
 		<div class="fos-card">
 			<h2>আমার লাইসেন্স</h2>
 			<?php if ( ! $rows ) : ?>
-				<p class="fos-muted">এখনো কোনো প্যাকেজ নেই। প্লাগিন ইনস্টল করলে <?php echo esc_html( FOS_Store::opt( 'trial_days' ) ); ?> দিন ফ্রি চলবে, তারপর নিচে থেকে প্যাকেজ নিন।</p>
+				<p class="fos-muted">এখনো কোনো লাইসেন্স নেই। উপরের কার্ড থেকে <?php echo esc_html( FOS_Store::opt( 'trial_days' ) ); ?> দিনের ফ্রি ট্রায়াল কী নিন, অথবা নিচে থেকে প্যাকেজ কিনুন।</p>
 			<?php else : ?>
 				<div class="fos-table-wrap"><table class="fos-table">
 					<thead><tr><th>ডোমেইন</th><th>লাইসেন্স কী</th><th>প্যাকেজ</th><th>অবস্থা</th><th>মেয়াদ</th><th></th></tr></thead>
