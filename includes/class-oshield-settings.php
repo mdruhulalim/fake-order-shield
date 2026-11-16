@@ -26,6 +26,13 @@ class OShield_Settings {
 	 * Tabs => sections => fields.
 	 *
 	 * Field keys: id, type, label, desc, default, options, placeholder, class.
+	 * UI-only keys (ignored by storage):
+	 *   master    – this checkbox switches the whole section on/off; other fields hide when off.
+	 *   recommend – recommended value, shown as a one-click chip.
+	 *   warn      – array( op, value, message ): live warning when the value is risky.
+	 *               op is one of '>', '<', '==', 'empty'.
+	 *   show_if   – "key=value" or "key!=value", for select-driven fields.
+	 * Tab keys: label, icon (dashicon), intro.
 	 *
 	 * @return array
 	 */
@@ -36,6 +43,8 @@ class OShield_Settings {
 		return array(
 			'general'    => array(
 				'label'    => __( 'General', 'order-shield' ),
+				'icon'     => 'dashicons-admin-generic',
+				'intro'    => __( 'Orders screen columns, your support number and the chatbot API.', 'order-shield' ),
 				'sections' => array(
 					array(
 						'title'  => __( 'Orders screen', 'order-shield' ),
@@ -48,7 +57,7 @@ class OShield_Settings {
 					array(
 						'title'  => __( 'Customer messages', 'order-shield' ),
 						'fields' => array(
-							array( 'id' => 'support_number', 'type' => 'text', 'label' => __( 'Support phone number', 'order-shield' ), 'desc' => __( 'Shown as a "Call" button whenever a customer is blocked, so real customers can still reach you.', 'order-shield' ), 'default' => '', 'placeholder' => '01XXXXXXXXX' ),
+							array( 'id' => 'support_number', 'type' => 'text', 'label' => __( 'Support phone number', 'order-shield' ), 'desc' => __( 'Shown as a "Call" button whenever a customer is blocked, so real customers can still reach you.', 'order-shield' ), 'default' => '', 'placeholder' => '01XXXXXXXXX', 'warn' => array( 'empty', '', __( 'Without a number, blocked customers see "call us" but have no number to call. Real buyers who get blocked by mistake are lost.', 'order-shield' ) ) ),
 						),
 					),
 					array(
@@ -67,11 +76,14 @@ class OShield_Settings {
 			),
 			'checkout'   => array(
 				'label'    => __( 'Checkout Protection', 'order-shield' ),
+				'icon'     => 'dashicons-shield-alt',
+				'intro'    => __( 'Rules that run when a customer presses "Place order". Not sure what to pick? Use a protection level above.', 'order-shield' ),
+				'presets'  => true,
 				'sections' => array(
 					array(
 						'title'  => __( 'Phone number validation', 'order-shield' ),
 						'fields' => array(
-							array( 'id' => 'phone_validation', 'type' => 'checkbox', 'label' => __( 'Validate phone', 'order-shield' ), 'desc' => __( 'Only accept valid Bangladeshi mobile numbers (01XXXXXXXXX). Bangla digits and +88 are converted automatically.', 'order-shield' ), 'default' => '1' ),
+							array( 'id' => 'phone_validation', 'type' => 'checkbox', 'master' => true, 'label' => __( 'Validate phone', 'order-shield' ), 'desc' => __( 'Only accept valid Bangladeshi mobile numbers (01XXXXXXXXX). Bangla digits and +88 are converted automatically.', 'order-shield' ), 'default' => '1' ),
 							array( 'id' => 'phone_message', 'type' => 'text', 'label' => __( 'Error message', 'order-shield' ), 'default' => 'অনুগ্রহ করে আপনার সঠিক ১১ সংখ্যার মোবাইল নম্বর দিন।', 'class' => 'large-text' ),
 						),
 					),
@@ -79,6 +91,7 @@ class OShield_Settings {
 						'title'  => __( 'Block list', 'order-shield' ),
 						'desc'   => __( 'Blocked phone numbers, IP addresses, devices and emails cannot place orders. Manage them under Order Shield → Block List.', 'order-shield' ),
 						'fields' => array(
+							array( 'id' => 'blocklist_enabled', 'type' => 'checkbox', 'master' => true, 'label' => __( 'Enforce block list', 'order-shield' ), 'desc' => __( 'Stop blocked customers at checkout.', 'order-shield' ), 'default' => '1' ),
 							array(
 								'id'      => 'device_match',
 								'type'    => 'select',
@@ -89,25 +102,25 @@ class OShield_Settings {
 									'network' => __( 'On the same internet connection (recommended)', 'order-shield' ),
 									'any'     => __( 'Anywhere', 'order-shield' ),
 								),
+								'recommend' => 'network',
 							),
-							array( 'id' => 'blocklist_enabled', 'type' => 'checkbox', 'label' => __( 'Enforce block list', 'order-shield' ), 'desc' => __( 'Stop blocked customers at checkout.', 'order-shield' ), 'default' => '1' ),
 							array( 'id' => 'block_message', 'type' => 'textarea', 'label' => __( 'Message for blocked customers', 'order-shield' ), 'default' => 'দুঃখিত, সন্দেহজনক কার্যকলাপের কারণে আপনার অর্ডার গ্রহণ করা যাচ্ছে না। প্রয়োজনে আমাদের কল করুন।' ),
 						),
 					),
 					array(
 						'title'  => __( 'Auto block', 'order-shield' ),
 						'fields' => array(
-							array( 'id' => 'auto_block', 'type' => 'checkbox', 'label' => __( 'Auto block', 'order-shield' ), 'desc' => __( 'Automatically block a phone, IP and device that places too many orders in a short time.', 'order-shield' ), 'default' => '0' ),
-							array( 'id' => 'auto_block_limit', 'type' => 'number', 'label' => __( 'Max orders', 'order-shield' ), 'desc' => __( 'Block after this many orders…', 'order-shield' ), 'default' => '3', 'min' => 1 ),
-							array( 'id' => 'auto_block_hours', 'type' => 'number', 'label' => __( 'Within (hours)', 'order-shield' ), 'default' => '24', 'min' => 1 ),
-							array( 'id' => 'auto_block_days', 'type' => 'number', 'label' => __( 'Block for (days)', 'order-shield' ), 'desc' => __( '0 = permanently.', 'order-shield' ), 'default' => '7', 'min' => 0 ),
+							array( 'id' => 'auto_block', 'type' => 'checkbox', 'master' => true, 'label' => __( 'Auto block', 'order-shield' ), 'desc' => __( 'Automatically block a phone, IP and device that places too many orders in a short time.', 'order-shield' ), 'default' => '0' ),
+							array( 'id' => 'auto_block_limit', 'type' => 'number', 'label' => __( 'Max orders', 'order-shield' ), 'desc' => __( 'Block after this many orders…', 'order-shield' ), 'default' => '3', 'min' => 1, 'recommend' => '3', 'warn' => array( '<', 3, __( 'People in the same house or office share one internet connection. With 2, the second person can get blocked too.', 'order-shield' ) ) ),
+							array( 'id' => 'auto_block_hours', 'type' => 'number', 'label' => __( 'Within (hours)', 'order-shield' ), 'default' => '24', 'min' => 1, 'recommend' => '24' ),
+							array( 'id' => 'auto_block_days', 'type' => 'number', 'label' => __( 'Block for (days)', 'order-shield' ), 'desc' => __( '0 = permanently.', 'order-shield' ), 'default' => '7', 'min' => 0, 'recommend' => '7', 'warn' => array( '==', 0, __( 'Permanent auto blocks never expire. A real customer caught by mistake stays blocked until you remove them by hand.', 'order-shield' ) ) ),
 						),
 					),
 					array(
 						'title'  => __( 'Repeat order blocker', 'order-shield' ),
 						'fields' => array(
-							array( 'id' => 'repeat_block', 'type' => 'checkbox', 'label' => __( 'Block repeat orders', 'order-shield' ), 'desc' => __( 'Stop the same phone number from ordering again within the time limit.', 'order-shield' ), 'default' => '0' ),
-							array( 'id' => 'repeat_hours', 'type' => 'number', 'label' => __( 'Time limit (hours)', 'order-shield' ), 'default' => '24', 'min' => 1 ),
+							array( 'id' => 'repeat_block', 'type' => 'checkbox', 'master' => true, 'label' => __( 'Block repeat orders', 'order-shield' ), 'desc' => __( 'Stop the same phone number from ordering again within the time limit.', 'order-shield' ), 'default' => '0' ),
+							array( 'id' => 'repeat_hours', 'type' => 'number', 'label' => __( 'Time limit (hours)', 'order-shield' ), 'desc' => __( '24 = 1 day, 72 = 3 days, 168 = 1 week.', 'order-shield' ), 'default' => '24', 'min' => 1, 'recommend' => '24', 'warn' => array( '>', 72, __( 'More than 3 days: your regular customers who come back to buy again will be blocked too.', 'order-shield' ) ) ),
 							array( 'id' => 'repeat_message', 'type' => 'textarea', 'label' => __( 'Message', 'order-shield' ), 'desc' => __( 'Placeholders: {hours} = hours left, {order_id} = previous order.', 'order-shield' ), 'default' => 'আপনি ইতিমধ্যে একটি অর্ডার করেছেন (#{order_id})। নতুন অর্ডার করতে {hours} ঘণ্টা অপেক্ষা করুন অথবা আমাদের কল করুন।' ),
 						),
 					),
@@ -115,6 +128,8 @@ class OShield_Settings {
 			),
 			'fraud'      => array(
 				'label'    => __( 'Fraud Check', 'order-shield' ),
+				'icon'     => 'dashicons-search',
+				'intro'    => __( 'How the delivery success ratio is worked out, and blocking customers whose ratio is too low.', 'order-shield' ),
 				'sections' => array(
 					array(
 						'title'  => __( 'Where the delivery ratio comes from', 'order-shield' ),
@@ -131,16 +146,17 @@ class OShield_Settings {
 									'both'  => __( 'Both (API first, store history as backup)', 'order-shield' ),
 								),
 							),
-							array( 'id' => 'fraud_api_url', 'type' => 'text', 'label' => __( 'API URL', 'order-shield' ), 'desc' => __( 'Use {phone} where the number goes, e.g. https://provider.example/api/check?phone={phone}. For POST, the phone is also sent in the body.', 'order-shield' ), 'default' => '', 'class' => 'large-text code' ),
+							array( 'id' => 'fraud_api_url', 'type' => 'text', 'show_if' => 'fraud_source!=local', 'label' => __( 'API URL', 'order-shield' ), 'desc' => __( 'Use {phone} where the number goes, e.g. https://provider.example/api/check?phone={phone}. For POST, the phone is also sent in the body.', 'order-shield' ), 'default' => '', 'class' => 'large-text code' ),
 							array(
 								'id'      => 'fraud_api_method',
 								'type'    => 'select',
+								'show_if' => 'fraud_source!=local',
 								'label'   => __( 'Request method', 'order-shield' ),
 								'default' => 'GET',
 								'options' => array( 'GET' => 'GET', 'POST' => 'POST' ),
 							),
-							array( 'id' => 'fraud_api_headers', 'type' => 'textarea', 'label' => __( 'Request headers', 'order-shield' ), 'desc' => __( 'One per line, e.g. Authorization: Bearer YOUR_API_KEY', 'order-shield' ), 'default' => '', 'class' => 'large-text code' ),
-							array( 'id' => 'fraud_cache_hours', 'type' => 'number', 'label' => __( 'Cache results (hours)', 'order-shield' ), 'desc' => __( 'Saves API calls. 0 = always fetch fresh.', 'order-shield' ), 'default' => '24', 'min' => 0 ),
+							array( 'id' => 'fraud_api_headers', 'type' => 'textarea', 'show_if' => 'fraud_source!=local', 'label' => __( 'Request headers', 'order-shield' ), 'desc' => __( 'One per line, e.g. Authorization: Bearer YOUR_API_KEY', 'order-shield' ), 'default' => '', 'class' => 'large-text code' ),
+							array( 'id' => 'fraud_cache_hours', 'type' => 'number', 'show_if' => 'fraud_source!=local', 'label' => __( 'Cache results (hours)', 'order-shield' ), 'desc' => __( 'Saves API calls. 0 = always fetch fresh.', 'order-shield' ), 'default' => '24', 'min' => 0 ),
 						),
 					),
 					array(
@@ -154,9 +170,9 @@ class OShield_Settings {
 						'title'  => __( 'Smart order filter', 'order-shield' ),
 						'desc'   => __( 'Block the order at checkout when a customer\'s delivery success ratio is too low.', 'order-shield' ),
 						'fields' => array(
-							array( 'id' => 'smart_filter', 'type' => 'checkbox', 'label' => __( 'Enable smart filter', 'order-shield' ), 'default' => '0' ),
-							array( 'id' => 'smart_threshold', 'type' => 'number', 'label' => __( 'Minimum success ratio (%)', 'order-shield' ), 'default' => '70', 'min' => 0, 'max' => 100 ),
-							array( 'id' => 'smart_min_orders', 'type' => 'number', 'label' => __( 'Only judge after (orders)', 'order-shield' ), 'desc' => __( 'Customers with fewer finished orders than this are treated as new and allowed.', 'order-shield' ), 'default' => '2', 'min' => 1 ),
+							array( 'id' => 'smart_filter', 'type' => 'checkbox', 'master' => true, 'label' => __( 'Enable smart filter', 'order-shield' ), 'desc' => __( 'Block customers who often cancel or return parcels.', 'order-shield' ), 'default' => '0' ),
+							array( 'id' => 'smart_threshold', 'type' => 'number', 'label' => __( 'Minimum success ratio (%)', 'order-shield' ), 'desc' => __( 'Example: 60 blocks a customer who received fewer than 6 of their last 10 orders.', 'order-shield' ), 'default' => '70', 'min' => 0, 'max' => 100, 'recommend' => '60', 'warn' => array( '>', 80, __( 'Above 80% is very strict: one returned parcel can be enough to block a good customer.', 'order-shield' ) ) ),
+							array( 'id' => 'smart_min_orders', 'type' => 'number', 'label' => __( 'Only judge after (orders)', 'order-shield' ), 'desc' => __( 'Customers with fewer finished orders than this are treated as new and allowed.', 'order-shield' ), 'default' => '2', 'min' => 1, 'recommend' => '2', 'warn' => array( '<', 2, __( 'With 1, a single cancelled order is enough to block someone.', 'order-shield' ) ) ),
 							array( 'id' => 'smart_message', 'type' => 'textarea', 'label' => __( 'Block message', 'order-shield' ), 'default' => 'দুঃখিত, এই নাম্বার দিয়ে আমরা অর্ডারটি গ্রহণ করতে পারছি না। অর্ডার কনফার্ম করতে আমাদের কল করুন।' ),
 						),
 					),
@@ -164,14 +180,16 @@ class OShield_Settings {
 			),
 			'incomplete' => array(
 				'label'    => __( 'Incomplete Orders', 'order-shield' ),
+				'icon'     => 'dashicons-cart',
+				'intro'    => __( 'Save customers who leave the checkout without ordering, so you can call them back.', 'order-shield' ),
 				'sections' => array(
 					array(
 						'title'  => __( 'Capture', 'order-shield' ),
 						'desc'   => __( 'Saves the details of customers who fill in the checkout form but leave without ordering, so you can call them and recover the sale.', 'order-shield' ),
 						'fields' => array(
-							array( 'id' => 'incomplete_enabled', 'type' => 'checkbox', 'label' => __( 'Capture incomplete orders', 'order-shield' ), 'default' => '0' ),
+							array( 'id' => 'incomplete_enabled', 'type' => 'checkbox', 'master' => true, 'label' => __( 'Capture incomplete orders', 'order-shield' ), 'default' => '0' ),
 							array( 'id' => 'incomplete_skip_existing', 'type' => 'checkbox', 'label' => __( 'Skip existing customers', 'order-shield' ), 'desc' => __( 'Do not capture phone numbers that already have an order.', 'order-shield' ), 'default' => '0' ),
-							array( 'id' => 'incomplete_cooldown', 'type' => 'number', 'label' => __( 'Cooldown after an order (minutes)', 'order-shield' ), 'desc' => __( 'Right after a customer orders, do not capture them again for this long. 0 = off.', 'order-shield' ), 'default' => '30', 'min' => 0 ),
+							array( 'id' => 'incomplete_cooldown', 'type' => 'number', 'label' => __( 'Cooldown after an order (minutes)', 'order-shield' ), 'desc' => __( 'Right after a customer orders, do not capture them again for this long. 0 = off.', 'order-shield' ), 'default' => '30', 'min' => 0, 'recommend' => '30' ),
 							array( 'id' => 'incomplete_retention', 'type' => 'number', 'label' => __( 'Keep for (days)', 'order-shield' ), 'default' => '30', 'min' => 1 ),
 							array(
 								'id'      => 'incomplete_digest',
@@ -183,28 +201,30 @@ class OShield_Settings {
 									'daily' => __( 'Daily', 'order-shield' ),
 								),
 							),
-							array( 'id' => 'incomplete_digest_to', 'type' => 'text', 'label' => __( 'Send summary to', 'order-shield' ), 'desc' => __( 'Leave empty to use the site admin email.', 'order-shield' ), 'default' => '' ),
+							array( 'id' => 'incomplete_digest_to', 'type' => 'text', 'show_if' => 'incomplete_digest=daily', 'label' => __( 'Send summary to', 'order-shield' ), 'desc' => __( 'Leave empty to use the site admin email.', 'order-shield' ), 'default' => '' ),
 						),
 					),
 				),
 			),
 			'live'       => array(
 				'label'    => __( 'Live Visitors', 'order-shield' ),
+				'icon'     => 'dashicons-visibility',
+				'intro'    => __( 'Watch who is on your site and replay what they did. Recordings take database space, so keep them short.', 'order-shield' ),
 				'sections' => array(
 					array(
 						'title'  => __( 'Live visitors', 'order-shield' ),
 						'desc'   => __( 'See who is on your website right now, which page they are on and how many pages they viewed.', 'order-shield' ),
 						'fields' => array(
-							array( 'id' => 'live_enabled', 'type' => 'checkbox', 'label' => __( 'Track visitors', 'order-shield' ), 'default' => '1' ),
+							array( 'id' => 'live_enabled', 'type' => 'checkbox', 'master' => true, 'label' => __( 'Track visitors', 'order-shield' ), 'default' => '1' ),
 							array( 'id' => 'live_exclude_admins', 'type' => 'checkbox', 'label' => __( 'Ignore shop staff', 'order-shield' ), 'desc' => __( 'Do not track logged-in administrators and shop managers.', 'order-shield' ), 'default' => '1' ),
-							array( 'id' => 'live_retention', 'type' => 'number', 'label' => __( 'Keep visitor history for (days)', 'order-shield' ), 'default' => '7', 'min' => 1 ),
+							array( 'id' => 'live_retention', 'type' => 'number', 'label' => __( 'Keep visitor history for (days)', 'order-shield' ), 'default' => '7', 'min' => 1, 'recommend' => '7', 'warn' => array( '>', 30, __( 'Long history makes the database big and the site slower.', 'order-shield' ) ) ),
 						),
 					),
 					array(
 						'title'  => __( 'Session replay', 'order-shield' ),
 						'desc'   => __( 'Record what visitors do and watch it back like a video, from Live Visitors or Incomplete Orders.', 'order-shield' ),
 						'fields' => array(
-							array( 'id' => 'replay_enabled', 'type' => 'checkbox', 'label' => __( 'Record sessions', 'order-shield' ), 'default' => '1' ),
+							array( 'id' => 'replay_enabled', 'type' => 'checkbox', 'master' => true, 'label' => __( 'Record sessions', 'order-shield' ), 'default' => '1' ),
 							array(
 								'id'      => 'replay_scope',
 								'type'    => 'select',
@@ -214,9 +234,10 @@ class OShield_Settings {
 									'all'      => __( 'Every page (whole visit)', 'order-shield' ),
 									'checkout' => __( 'Checkout page only (uses less storage)', 'order-shield' ),
 								),
+								'recommend' => 'checkout',
 							),
-							array( 'id' => 'replay_retention', 'type' => 'number', 'label' => __( 'Keep recordings for (days)', 'order-shield' ), 'desc' => __( 'Recordings use database space; older ones are deleted automatically. Recordings of customers who left at checkout are kept as long as the incomplete order.', 'order-shield' ), 'default' => '3', 'min' => 1 ),
-							array( 'id' => 'replay_max_seconds', 'type' => 'number', 'label' => __( 'Max recording per page (seconds)', 'order-shield' ), 'default' => '300', 'min' => 30 ),
+							array( 'id' => 'replay_retention', 'type' => 'number', 'label' => __( 'Keep recordings for (days)', 'order-shield' ), 'desc' => __( 'Recordings use database space; older ones are deleted automatically. Recordings of customers who left at checkout are kept as long as the incomplete order.', 'order-shield' ), 'default' => '3', 'min' => 1, 'recommend' => '3', 'warn' => array( '>', 7, __( 'Recordings are large. Keeping them more than a week can fill the database quickly.', 'order-shield' ) ) ),
+							array( 'id' => 'replay_max_seconds', 'type' => 'number', 'label' => __( 'Max recording per page (seconds)', 'order-shield' ), 'default' => '300', 'min' => 30, 'recommend' => '300', 'warn' => array( '>', 600, __( 'Long recordings use a lot of database space.', 'order-shield' ) ) ),
 							array(
 								'id'      => 'replay_mask',
 								'type'    => 'select',
@@ -233,11 +254,13 @@ class OShield_Settings {
 			),
 			'courier'    => array(
 				'label'    => __( 'Courier', 'order-shield' ),
+				'icon'     => 'dashicons-car',
+				'intro'    => __( 'Send orders to Steadfast or Pathao and update order status automatically. If another plugin already sends your parcels, keep these off to avoid sending twice.', 'order-shield' ),
 				'sections' => array(
 					array(
 						'title'  => 'Steadfast',
 						'fields' => array(
-							array( 'id' => 'steadfast_enabled', 'type' => 'checkbox', 'label' => __( 'Enable Steadfast', 'order-shield' ), 'default' => '0' ),
+							array( 'id' => 'steadfast_enabled', 'type' => 'checkbox', 'master' => true, 'label' => __( 'Enable Steadfast', 'order-shield' ), 'default' => '0' ),
 							array( 'id' => 'steadfast_api_key', 'type' => 'text', 'label' => __( 'API key', 'order-shield' ), 'default' => '', 'class' => 'regular-text code' ),
 							array( 'id' => 'steadfast_secret_key', 'type' => 'password', 'label' => __( 'Secret key', 'order-shield' ), 'default' => '' ),
 							array( 'id' => 'steadfast_webhook_token', 'type' => 'webhook', 'courier' => 'steadfast', 'label' => __( 'Webhook', 'order-shield' ), 'desc' => __( 'In Steadfast → API → Webhook, paste this Callback URL and Auth Token to get live delivery updates.', 'order-shield' ), 'default' => '' ),
@@ -246,7 +269,7 @@ class OShield_Settings {
 					array(
 						'title'  => 'Pathao',
 						'fields' => array(
-							array( 'id' => 'pathao_enabled', 'type' => 'checkbox', 'label' => __( 'Enable Pathao', 'order-shield' ), 'default' => '0' ),
+							array( 'id' => 'pathao_enabled', 'type' => 'checkbox', 'master' => true, 'label' => __( 'Enable Pathao', 'order-shield' ), 'default' => '0' ),
 							array(
 								'id'      => 'pathao_env',
 								'type'    => 'select',
@@ -280,19 +303,21 @@ class OShield_Settings {
 			),
 			'vpn'        => array(
 				'label'    => __( 'VPN & Country', 'order-shield' ),
+				'icon'     => 'dashicons-admin-site-alt3',
+				'intro'    => __( 'Stop orders that come through a VPN or from outside the countries you deliver to.', 'order-shield' ),
 				'sections' => array(
 					array(
 						'title'  => __( 'VPN / proxy block', 'order-shield' ),
 						'desc'   => __( 'Fake orders often come through VPNs. Detection uses proxycheck.io (free plan: 1,000 checks/day without a key; add a free key for more). If the check fails, the customer is allowed.', 'order-shield' ),
 						'fields' => array(
-							array( 'id' => 'vpn_block', 'type' => 'checkbox', 'label' => __( 'Block VPN and proxy users', 'order-shield' ), 'default' => '0' ),
+							array( 'id' => 'vpn_block', 'type' => 'checkbox', 'master' => true, 'label' => __( 'Block VPN and proxy users', 'order-shield' ), 'default' => '0' ),
 							array( 'id' => 'proxycheck_key', 'type' => 'text', 'label' => __( 'proxycheck.io API key', 'order-shield' ), 'desc' => __( 'Optional.', 'order-shield' ), 'default' => '', 'class' => 'regular-text code' ),
 						),
 					),
 					array(
 						'title'  => __( 'Country restriction', 'order-shield' ),
 						'fields' => array(
-							array( 'id' => 'country_restrict', 'type' => 'checkbox', 'label' => __( 'Allow only some countries', 'order-shield' ), 'default' => '0' ),
+							array( 'id' => 'country_restrict', 'type' => 'checkbox', 'master' => true, 'label' => __( 'Allow only some countries', 'order-shield' ), 'default' => '0' ),
 							array( 'id' => 'allowed_countries', 'type' => 'text', 'label' => __( 'Allowed countries', 'order-shield' ), 'desc' => __( 'Two-letter codes separated by commas, e.g. BD', 'order-shield' ), 'default' => 'BD' ),
 						),
 					),
@@ -308,6 +333,7 @@ class OShield_Settings {
 									'checkout' => __( 'Placing an order only', 'order-shield' ),
 									'site'     => __( 'Whole website', 'order-shield' ),
 								),
+								'recommend' => 'checkout',
 							),
 							array( 'id' => 'vpn_message', 'type' => 'textarea', 'label' => __( 'Message', 'order-shield' ), 'default' => 'VPN বা প্রক্সি ব্যবহার করে অর্ডার করা যাবে না। অনুগ্রহ করে VPN বন্ধ করে আবার চেষ্টা করুন।' ),
 						),
@@ -447,6 +473,132 @@ class OShield_Settings {
 		}
 
 		return $stored;
+	}
+
+	/**
+	 * Ready-made protection levels for checkout rules.
+	 *
+	 * @return array id => [label, desc, values]
+	 */
+	public static function presets() {
+		return array(
+			'light'    => array(
+				'label'  => __( 'Light', 'order-shield' ),
+				'desc'   => __( 'Only checks the phone number and your block list. Never stops a real customer by mistake.', 'order-shield' ),
+				'values' => array(
+					'phone_validation'  => '1',
+					'blocklist_enabled' => '1',
+					'auto_block'        => '0',
+					'repeat_block'      => '0',
+					'smart_filter'      => '0',
+					'vpn_block'         => '0',
+					'country_restrict'  => '0',
+				),
+			),
+			'balanced' => array(
+				'label'  => __( 'Balanced', 'order-shield' ),
+				'desc'   => __( 'Recommended for most shops. Stops repeat and bulk fake orders, allows returning customers after a day.', 'order-shield' ),
+				'values' => array(
+					'phone_validation'  => '1',
+					'blocklist_enabled' => '1',
+					'auto_block'        => '1',
+					'auto_block_limit'  => '3',
+					'auto_block_hours'  => '24',
+					'auto_block_days'   => '7',
+					'repeat_block'      => '1',
+					'repeat_hours'      => '24',
+					'smart_filter'      => '1',
+					'smart_threshold'   => '60',
+					'smart_min_orders'  => '2',
+					'vpn_block'         => '0',
+					'country_restrict'  => '0',
+				),
+			),
+			'strict'   => array(
+				'label'  => __( 'Strict', 'order-shield' ),
+				'desc'   => __( 'For shops with many fake orders. Also blocks VPN and foreign visitors. Some real customers may need to call you.', 'order-shield' ),
+				'values' => array(
+					'phone_validation'  => '1',
+					'blocklist_enabled' => '1',
+					'auto_block'        => '1',
+					'auto_block_limit'  => '2',
+					'auto_block_hours'  => '24',
+					'auto_block_days'   => '30',
+					'repeat_block'      => '1',
+					'repeat_hours'      => '72',
+					'smart_filter'      => '1',
+					'smart_threshold'   => '70',
+					'smart_min_orders'  => '2',
+					'vpn_block'         => '1',
+					'country_restrict'  => '1',
+					'allowed_countries' => 'BD',
+				),
+			),
+		);
+	}
+
+	/**
+	 * Which preset matches the current settings, or '' for custom.
+	 *
+	 * @return string
+	 */
+	public static function current_preset() {
+		foreach ( self::presets() as $id => $preset ) {
+			$match = true;
+			foreach ( $preset['values'] as $k => $v ) {
+				if ( (string) self::get( $k ) !== (string) $v ) {
+					$match = false;
+					break;
+				}
+			}
+			if ( $match ) {
+				return $id;
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Apply a preset.
+	 *
+	 * @param string $id Preset id.
+	 * @return bool
+	 */
+	public static function apply_preset( $id ) {
+		$presets = self::presets();
+		if ( ! isset( $presets[ $id ] ) ) {
+			return false;
+		}
+		self::update( $presets[ $id ]['values'] );
+		return true;
+	}
+
+	/**
+	 * Settings that are switched on but set in a risky way.
+	 * Used by the dashboard "Needs attention" box.
+	 *
+	 * @return array List of [message, tab].
+	 */
+	public static function advice() {
+		$out      = array();
+		$blocking = oshield_on( 'blocklist_enabled' ) || oshield_on( 'auto_block' ) || oshield_on( 'repeat_block' ) || oshield_on( 'smart_filter' ) || oshield_on( 'vpn_block' ) || oshield_on( 'country_restrict' );
+		if ( $blocking && '' === trim( (string) self::get( 'support_number' ) ) ) {
+			$out[] = array( __( 'Add a support phone number. Blocked customers are told to call you, but no number is shown.', 'order-shield' ), 'general' );
+		}
+		if ( oshield_on( 'repeat_block' ) && (float) self::get( 'repeat_hours' ) > 72 ) {
+			/* translators: %d hours */
+			$out[] = array( sprintf( __( 'Repeat order blocker is set to %d hours. Returning customers will be blocked for that long — 24 hours is usually enough.', 'order-shield' ), (int) self::get( 'repeat_hours' ) ), 'checkout' );
+		}
+		if ( oshield_on( 'auto_block' ) && (float) self::get( 'auto_block_limit' ) < 3 ) {
+			$out[] = array( __( 'Auto block triggers after only 2 orders. Family members on the same WiFi can be blocked — 3 is safer.', 'order-shield' ), 'checkout' );
+		}
+		if ( oshield_on( 'smart_filter' ) && (float) self::get( 'smart_threshold' ) > 80 ) {
+			$out[] = array( __( 'Smart filter needs more than 80% delivery success. One returned parcel can block a good customer.', 'order-shield' ), 'fraud' );
+		}
+		if ( oshield_on( 'replay_enabled' ) && 'all' === self::get( 'replay_scope' ) ) {
+			$out[] = array( __( 'Session replay records every page. "Checkout page only" saves a lot of database space.', 'order-shield' ), 'live' );
+		}
+		return $out;
 	}
 
 	/**

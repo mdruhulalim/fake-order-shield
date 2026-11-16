@@ -20,13 +20,35 @@ class OShield_Admin_Pages {
 	private static $table = null;
 
 	/**
-	 * Page header.
+	 * Page header: brand bar with page navigation, then the page title.
 	 *
 	 * @param string $title  Title.
 	 * @param string $action Optional "page title action" HTML.
 	 */
 	private static function header( $title, $action = '' ) {
+		$current = isset( $_GET['page'] ) ? sanitize_key( $_GET['page'] ) : 'order-shield'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$pages   = array(
+			'order-shield'            => array( __( 'Dashboard', 'order-shield' ), 'dashicons-dashboard' ),
+			'order-shield-live'       => array( __( 'Live Visitors', 'order-shield' ), 'dashicons-visibility' ),
+			'order-shield-search'     => array( __( 'Fraud Check', 'order-shield' ), 'dashicons-search' ),
+			'order-shield-incomplete' => array( __( 'Incomplete', 'order-shield' ), 'dashicons-cart' ),
+			'order-shield-blocklist'  => array( __( 'Block List', 'order-shield' ), 'dashicons-dismiss' ),
+			'order-shield-activity'   => array( __( 'Activity', 'order-shield' ), 'dashicons-list-view' ),
+		);
+		if ( current_user_can( 'manage_options' ) ) {
+			$pages['order-shield-settings'] = array( __( 'Settings', 'order-shield' ), 'dashicons-admin-generic' );
+		}
+
 		echo '<div class="wrap oshield-wrap">';
+		echo '<div class="oshield-topbar">';
+		echo '<a class="oshield-brand" href="' . esc_url( admin_url( 'admin.php?page=order-shield' ) ) . '"><span class="oshield-logo"><span class="dashicons dashicons-shield"></span></span><span class="oshield-brand-text"><strong>Order Shield</strong><small>v' . esc_html( OSHIELD_VERSION ) . '</small></span></a>';
+		echo '<nav class="oshield-pagenav" aria-label="' . esc_attr__( 'Order Shield pages', 'order-shield' ) . '">';
+		foreach ( $pages as $slug => $p ) {
+			$is = $slug === $current;
+			echo '<a href="' . esc_url( admin_url( 'admin.php?page=' . $slug ) ) . '" class="' . ( $is ? 'is-current' : '' ) . '"' . ( $is ? ' aria-current="page"' : '' ) . '><span class="dashicons ' . esc_attr( $p[1] ) . '"></span><span>' . esc_html( $p[0] ) . '</span></a>';
+		}
+		echo '</nav></div>';
+
 		echo '<h1 class="wp-heading-inline">' . esc_html( $title ) . '</h1>';
 		if ( $action ) {
 			echo wp_kses_post( $action );
@@ -113,84 +135,145 @@ class OShield_Admin_Pages {
 		$stopped30= (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}oshield_events WHERE created_at >= %s AND type IN ('blocked','repeat','smart_block','vpn')", $month ) ); // phpcs:ignore
 		$inc      = OShield_Incomplete::counts();
 		$shipped  = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$wpdb->prefix}oshield_shipments WHERE created_at >= %s", $month ) ); // phpcs:ignore
+		$is_admin = current_user_can( 'manage_options' );
 
-		self::header( __( 'Order Shield', 'order-shield' ) );
+		self::header( __( 'Dashboard', 'order-shield' ) );
+		self::preset_notice();
 		?>
 		<p class="oshield-intro"><?php esc_html_e( 'Stops fake and risky orders before they cost you delivery charges. Here is what is switched on and what happened recently.', 'order-shield' ); ?></p>
+
+		<?php
+		// Protection score.
+		$protections = array(
+			'phone_validation'  => oshield_on( 'phone_validation' ),
+			'blocklist_enabled' => oshield_on( 'blocklist_enabled' ),
+			'auto_block'        => oshield_on( 'auto_block' ),
+			'repeat_block'      => oshield_on( 'repeat_block' ),
+			'smart_filter'      => oshield_on( 'smart_filter' ),
+			'vpn'               => OShield_VPN::active(),
+		);
+		$on      = count( array_filter( $protections ) );
+		$total   = count( $protections );
+		$pct     = (int) round( $on / $total * 100 );
+		$tone    = $pct >= 66 ? 'good' : ( $pct >= 34 ? 'medium' : 'risky' );
+		$presets = OShield_Settings::presets();
+		$level   = OShield_Settings::current_preset();
+		$advice  = OShield_Settings::advice();
+		?>
+		<div class="oshield-hero">
+			<div class="oshield-panel oshield-score oshield-tone-<?php echo esc_attr( $tone ); ?>">
+				<div class="oshield-ring" style="--p:<?php echo esc_attr( $pct ); ?>"><span><?php echo esc_html( $on . '/' . $total ); ?></span></div>
+				<div class="oshield-score-text">
+					<span class="oshield-eyebrow"><?php esc_html_e( 'Checkout protection', 'order-shield' ); ?></span>
+					<h2><?php echo esc_html( sprintf( /* translators: 1: on, 2: total */ __( '%1$d of %2$d protections are on', 'order-shield' ), $on, $total ) ); ?></h2>
+					<p>
+						<?php esc_html_e( 'Protection level:', 'order-shield' ); ?>
+						<strong><?php echo esc_html( $level ? $presets[ $level ]['label'] : __( 'Custom', 'order-shield' ) ); ?></strong>
+						<?php if ( $is_admin ) : ?>
+							· <a href="<?php echo esc_url( admin_url( 'admin.php?page=order-shield-settings&tab=checkout' ) ); ?>"><?php esc_html_e( 'Change', 'order-shield' ); ?></a>
+						<?php endif; ?>
+					</p>
+				</div>
+			</div>
+
+			<div class="oshield-panel oshield-advice <?php echo $advice ? 'has-items' : 'is-clear'; ?>">
+				<?php if ( $advice ) : ?>
+					<h2><span class="dashicons dashicons-warning"></span> <?php echo esc_html( sprintf( /* translators: %d count */ _n( '%d thing needs your attention', '%d things need your attention', count( $advice ), 'order-shield' ), count( $advice ) ) ); ?></h2>
+					<ul>
+						<?php foreach ( $advice as $a ) : ?>
+							<li><span><?php echo esc_html( $a[0] ); ?></span>
+								<?php if ( $is_admin ) : ?>
+									<a class="button button-small" href="<?php echo esc_url( admin_url( 'admin.php?page=order-shield-settings&tab=' . $a[1] ) ); ?>"><?php esc_html_e( 'Fix', 'order-shield' ); ?></a>
+								<?php endif; ?>
+							</li>
+						<?php endforeach; ?>
+					</ul>
+				<?php else : ?>
+					<h2><span class="dashicons dashicons-yes-alt"></span> <?php esc_html_e( 'Everything looks good', 'order-shield' ); ?></h2>
+					<p><?php esc_html_e( 'No risky settings found. Fake orders are checked at every checkout.', 'order-shield' ); ?></p>
+				<?php endif; ?>
+			</div>
+		</div>
 
 		<div class="oshield-cards">
 			<?php
 			if ( oshield_on( 'live_enabled' ) ) {
 				$live = OShield_Live::stats();
-				self::card( __( 'Online now', 'order-shield' ), $live['online'], sprintf( /* translators: %d views */ __( '%d page views today', 'order-shield' ), $live['views_today'] ), 'order-shield-live', 'dashicons-groups' );
+				self::card( __( 'Online now', 'order-shield' ), $live['online'], sprintf( /* translators: %d views */ __( '%d page views today', 'order-shield' ), $live['views_today'] ), 'order-shield-live', 'dashicons-groups', 'green' );
 			}
-			self::card( __( 'Stopped today', 'order-shield' ), $stopped, sprintf( /* translators: %d count */ __( '%d in the last 30 days', 'order-shield' ), $stopped30 ), 'order-shield-activity', 'dashicons-shield-alt' );
-			self::card( __( 'Blocked customers', 'order-shield' ), OShield_Blocklist::count_active(), __( 'phones, IPs, devices, emails', 'order-shield' ), 'order-shield-blocklist', 'dashicons-dismiss' );
-			self::card( __( 'Incomplete orders', 'order-shield' ), $inc['pending'], sprintf( /* translators: %d count */ __( '%d ordered later or converted', 'order-shield' ), $inc['recovered'] + $inc['converted'] ), 'order-shield-incomplete', 'dashicons-cart' );
-			self::card( __( 'Sent to courier (30 days)', 'order-shield' ), $shipped, implode( ', ', OShield_Courier::enabled() ) ? implode( ', ', OShield_Courier::enabled() ) : __( 'no courier connected', 'order-shield' ), '', 'dashicons-car' );
+			self::card( __( 'Stopped today', 'order-shield' ), $stopped, sprintf( /* translators: %d count */ __( '%d in the last 30 days', 'order-shield' ), $stopped30 ), 'order-shield-activity', 'dashicons-shield-alt', 'red' );
+			self::card( __( 'Blocked customers', 'order-shield' ), OShield_Blocklist::count_active(), __( 'phones, IPs, devices, emails', 'order-shield' ), 'order-shield-blocklist', 'dashicons-dismiss', 'slate' );
+			self::card( __( 'Incomplete orders', 'order-shield' ), $inc['pending'], sprintf( /* translators: %d count */ __( '%d ordered later or converted', 'order-shield' ), $inc['recovered'] + $inc['converted'] ), 'order-shield-incomplete', 'dashicons-cart', 'amber' );
+			self::card( __( 'Sent to courier (30 days)', 'order-shield' ), $shipped, implode( ', ', OShield_Courier::enabled() ) ? implode( ', ', OShield_Courier::enabled() ) : __( 'no courier connected', 'order-shield' ), '', 'dashicons-car', 'blue' );
 			?>
 		</div>
 
 		<div class="oshield-columns">
-			<div class="postbox">
-				<div class="postbox-header"><h2 class="hndle"><?php esc_html_e( 'Protection status', 'order-shield' ); ?></h2></div>
-				<div class="inside">
-					<table class="widefat striped oshield-status-table">
-						<tbody>
-						<?php
-						$modules = array(
-							array( __( 'Phone number validation', 'order-shield' ), oshield_on( 'phone_validation' ), 'checkout' ),
-							array( __( 'Block list at checkout', 'order-shield' ), oshield_on( 'blocklist_enabled' ), 'checkout' ),
-							array( __( 'Auto block', 'order-shield' ), oshield_on( 'auto_block' ), 'checkout' ),
-							array( __( 'Repeat order blocker', 'order-shield' ), oshield_on( 'repeat_block' ), 'checkout' ),
-							array( __( 'Smart order filter', 'order-shield' ), oshield_on( 'smart_filter' ), 'fraud' ),
-							array( __( 'VPN / country block', 'order-shield' ), OShield_VPN::active(), 'vpn' ),
-							array( __( 'Incomplete orders', 'order-shield' ), oshield_on( 'incomplete_enabled' ), 'incomplete' ),
-							array( __( 'Live visitors', 'order-shield' ), oshield_on( 'live_enabled' ), 'live' ),
-							array( __( 'Session replay', 'order-shield' ), oshield_on( 'replay_enabled' ), 'live' ),
-							array( __( 'Steadfast', 'order-shield' ), oshield_on( 'steadfast_enabled' ), 'courier' ),
-							array( __( 'Pathao', 'order-shield' ), oshield_on( 'pathao_enabled' ), 'courier' ),
-						);
-						foreach ( $modules as $m ) {
-							echo '<tr><td>' . esc_html( $m[0] ) . '</td><td>';
-							echo $m[1] ? '<span class="oshield-pill oshield-pill-good">' . esc_html__( 'On', 'order-shield' ) . '</span>' : '<span class="oshield-pill">' . esc_html__( 'Off', 'order-shield' ) . '</span>';
-							echo '</td><td class="oshield-right"><a href="' . esc_url( admin_url( 'admin.php?page=order-shield-settings&tab=' . $m[2] ) ) . '">' . esc_html__( 'Configure', 'order-shield' ) . '</a></td></tr>';
-						}
-						?>
-						</tbody>
-					</table>
-				</div>
+			<div class="oshield-panel">
+				<div class="oshield-panel-head"><h2><?php esc_html_e( 'Protection status', 'order-shield' ); ?></h2></div>
+				<?php
+				$groups = array(
+					__( 'At checkout', 'order-shield' ) => array(
+						array( __( 'Phone number validation', 'order-shield' ), __( 'Only real BD mobile numbers', 'order-shield' ), oshield_on( 'phone_validation' ), 'checkout' ),
+						array( __( 'Block list', 'order-shield' ), __( 'Stops blocked phones, IPs and devices', 'order-shield' ), oshield_on( 'blocklist_enabled' ), 'checkout' ),
+						array( __( 'Auto block', 'order-shield' ), __( 'Blocks too many orders in a short time', 'order-shield' ), oshield_on( 'auto_block' ), 'checkout' ),
+						array( __( 'Repeat order blocker', 'order-shield' ), __( 'One order per phone within a time limit', 'order-shield' ), oshield_on( 'repeat_block' ), 'checkout' ),
+						array( __( 'Smart order filter', 'order-shield' ), __( 'Blocks low delivery success ratio', 'order-shield' ), oshield_on( 'smart_filter' ), 'fraud' ),
+						array( __( 'VPN / country block', 'order-shield' ), __( 'Stops VPN and foreign orders', 'order-shield' ), OShield_VPN::active(), 'vpn' ),
+					),
+					__( 'Tracking', 'order-shield' )    => array(
+						array( __( 'Incomplete orders', 'order-shield' ), __( 'Saves customers who leave checkout', 'order-shield' ), oshield_on( 'incomplete_enabled' ), 'incomplete' ),
+						array( __( 'Live visitors', 'order-shield' ), __( 'Who is on your site right now', 'order-shield' ), oshield_on( 'live_enabled' ), 'live' ),
+						array( __( 'Session replay', 'order-shield' ), __( 'Watch visits like a video', 'order-shield' ), oshield_on( 'replay_enabled' ), 'live' ),
+					),
+					__( 'Courier', 'order-shield' )     => array(
+						array( 'Steadfast', __( 'Send parcels and get delivery updates', 'order-shield' ), oshield_on( 'steadfast_enabled' ), 'courier' ),
+						array( 'Pathao', __( 'Send parcels and get delivery updates', 'order-shield' ), oshield_on( 'pathao_enabled' ), 'courier' ),
+					),
+				);
+				foreach ( $groups as $group => $modules ) {
+					echo '<h3 class="oshield-group-title">' . esc_html( $group ) . '</h3><ul class="oshield-modules">';
+					foreach ( $modules as $m ) {
+						$tag  = $is_admin ? 'a' : 'div';
+						$href = $is_admin ? ' href="' . esc_url( admin_url( 'admin.php?page=order-shield-settings&tab=' . $m[3] ) ) . '"' : '';
+						echo '<li><' . $tag . $href . ' class="oshield-module ' . ( $m[2] ? 'is-on' : 'is-off' ) . '">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+						echo '<span class="oshield-module-text"><strong>' . esc_html( $m[0] ) . '</strong><small>' . esc_html( $m[1] ) . '</small></span>';
+						echo '<span class="oshield-state">' . ( $m[2] ? esc_html__( 'On', 'order-shield' ) : esc_html__( 'Off', 'order-shield' ) ) . '</span>';
+						echo '</' . $tag . '></li>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+					}
+					echo '</ul>';
+				}
+				?>
 			</div>
 
 			<div>
-				<div class="postbox">
-					<div class="postbox-header"><h2 class="hndle"><?php esc_html_e( 'Quick fraud check', 'order-shield' ); ?></h2></div>
-					<div class="inside">
-						<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="oshield-inline-form">
-							<input type="hidden" name="page" value="order-shield-search">
-							<input type="tel" name="phone" class="regular-text" placeholder="01XXXXXXXXX" required>
-							<?php submit_button( __( 'Check', 'order-shield' ), 'primary', '', false ); ?>
-						</form>
-					</div>
+				<div class="oshield-panel">
+					<div class="oshield-panel-head"><h2><?php esc_html_e( 'Quick fraud check', 'order-shield' ); ?></h2></div>
+					<p class="oshield-muted"><?php esc_html_e( 'Type a customer\'s phone number to see how many of their orders were delivered.', 'order-shield' ); ?></p>
+					<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="oshield-inline-form oshield-bigsearch">
+						<input type="hidden" name="page" value="order-shield-search">
+						<span class="dashicons dashicons-phone"></span>
+						<input type="tel" name="phone" placeholder="01XXXXXXXXX" required>
+						<?php submit_button( __( 'Check', 'order-shield' ), 'primary', '', false ); ?>
+					</form>
 				</div>
 
-				<div class="postbox">
-					<div class="postbox-header"><h2 class="hndle"><?php esc_html_e( 'Recently stopped', 'order-shield' ); ?></h2></div>
-					<div class="inside">
-						<?php
-						$events = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}oshield_events ORDER BY id DESC LIMIT 8" ); // phpcs:ignore
-						$labels = OShield_Events_Table::type_labels();
-						if ( $events ) {
-							echo '<ul class="oshield-activity">';
-							foreach ( $events as $e ) {
-								echo '<li><strong>' . esc_html( isset( $labels[ $e->type ] ) ? $labels[ $e->type ] : $e->type ) . '</strong> · ' . esc_html( $e->phone ? $e->phone : $e->ip ) . '<br><span class="oshield-muted">' . esc_html( $e->reason ) . ' — ' . esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $e->created_at ) ) . '</span></li>';
-							}
-							echo '</ul><p><a href="' . esc_url( admin_url( 'admin.php?page=order-shield-activity' ) ) . '">' . esc_html__( 'View all activity', 'order-shield' ) . ' →</a></p>';
-						} else {
-							echo '<p class="oshield-muted">' . esc_html__( 'Nothing yet.', 'order-shield' ) . '</p>';
+				<div class="oshield-panel">
+					<div class="oshield-panel-head"><h2><?php esc_html_e( 'Recently stopped', 'order-shield' ); ?></h2>
+						<a href="<?php echo esc_url( admin_url( 'admin.php?page=order-shield-activity' ) ); ?>"><?php esc_html_e( 'View all', 'order-shield' ); ?> →</a></div>
+					<?php
+					$events = $wpdb->get_results( "SELECT * FROM {$wpdb->prefix}oshield_events ORDER BY id DESC LIMIT 8" ); // phpcs:ignore
+					$labels = OShield_Events_Table::type_labels();
+					if ( $events ) {
+						echo '<ul class="oshield-activity">';
+						foreach ( $events as $e ) {
+							echo '<li><span class="oshield-activity-icon dashicons dashicons-dismiss"></span><div><strong>' . esc_html( isset( $labels[ $e->type ] ) ? $labels[ $e->type ] : $e->type ) . '</strong> · ' . esc_html( $e->phone ? $e->phone : $e->ip ) . '<br><span class="oshield-muted">' . esc_html( $e->reason ) . ' — ' . esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $e->created_at ) ) . '</span></div></li>';
 						}
-						?>
-					</div>
+						echo '</ul>';
+					} else {
+						echo '<div class="oshield-empty"><span class="dashicons dashicons-smiley"></span><p>' . esc_html__( 'Nothing stopped yet. Blocked checkout attempts will appear here.', 'order-shield' ) . '</p></div>';
+					}
+					?>
 				</div>
 			</div>
 		</div>
@@ -206,16 +289,71 @@ class OShield_Admin_Pages {
 	 * @param string $sub   Sub text.
 	 * @param string $page  Linked page slug.
 	 * @param string $icon  Dashicon.
+	 * @param string $tone  Colour: green, red, amber, blue, slate.
 	 */
-	private static function card( $label, $value, $sub, $page, $icon ) {
-		$tag = $page ? 'a' : 'div';
+	private static function card( $label, $value, $sub, $page, $icon, $tone = 'slate' ) {
+		$tag  = $page ? 'a' : 'div';
 		$href = $page ? ' href="' . esc_url( admin_url( 'admin.php?page=' . $page ) ) . '"' : '';
-		echo '<' . $tag . ' class="oshield-card"' . $href . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-		echo '<span class="dashicons ' . esc_attr( $icon ) . '"></span>';
+		echo '<' . $tag . ' class="oshield-card oshield-card-' . esc_attr( $tone ) . '"' . $href . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<span class="oshield-card-icon"><span class="dashicons ' . esc_attr( $icon ) . '"></span></span>';
 		echo '<span class="oshield-card-label">' . esc_html( $label ) . '</span>';
 		echo '<span class="oshield-card-value">' . esc_html( number_format_i18n( $value ) ) . '</span>';
 		echo '<span class="oshield-card-sub">' . esc_html( $sub ) . '</span>';
 		echo '</' . $tag . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
+
+	/**
+	 * Notice after a protection level was applied.
+	 */
+	private static function preset_notice() {
+		if ( empty( $_GET['oshield_preset'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+		$id      = sanitize_key( $_GET['oshield_preset'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$presets = OShield_Settings::presets();
+		if ( isset( $presets[ $id ] ) ) {
+			/* translators: %s preset name */
+			self::notice( sprintf( __( 'Protection level set to <strong>%s</strong>.', 'order-shield' ), esc_html( $presets[ $id ]['label'] ) ) );
+		} else {
+			self::notice( __( 'Could not apply that protection level.', 'order-shield' ), 'error' );
+		}
+	}
+
+	/**
+	 * Protection level picker (Light / Balanced / Strict).
+	 *
+	 * @param string $back Where to return: settings|dashboard.
+	 */
+	private static function preset_box( $back = 'settings' ) {
+		$current = OShield_Settings::current_preset();
+		$icons   = array(
+			'light'    => 'dashicons-shield',
+			'balanced' => 'dashicons-shield-alt',
+			'strict'   => 'dashicons-lock',
+		);
+		?>
+		<div class="oshield-panel oshield-presets">
+			<div class="oshield-panel-head">
+				<h2><?php esc_html_e( 'Protection level', 'order-shield' ); ?></h2>
+				<span class="oshield-muted"><?php echo $current ? esc_html__( 'One click sets all the rules below.', 'order-shield' ) : esc_html__( 'Currently: Custom (your own settings)', 'order-shield' ); ?></span>
+			</div>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="oshield-preset-grid">
+				<input type="hidden" name="action" value="oshield_preset">
+				<input type="hidden" name="back" value="<?php echo esc_attr( $back ); ?>">
+				<?php wp_nonce_field( 'oshield_preset' ); ?>
+				<?php foreach ( OShield_Settings::presets() as $id => $p ) : ?>
+					<button type="submit" name="preset" value="<?php echo esc_attr( $id ); ?>" class="oshield-preset oshield-preset-<?php echo esc_attr( $id ); ?><?php echo $current === $id ? ' is-active' : ''; ?>" data-label="<?php echo esc_attr( $p['label'] ); ?>">
+						<span class="dashicons <?php echo esc_attr( $icons[ $id ] ); ?>"></span>
+						<strong><?php echo esc_html( $p['label'] ); ?>
+							<?php if ( 'balanced' === $id ) : ?><em><?php esc_html_e( 'Recommended', 'order-shield' ); ?></em><?php endif; ?>
+						</strong>
+						<small><?php echo esc_html( $p['desc'] ); ?></small>
+						<?php if ( $current === $id ) : ?><span class="oshield-preset-check"><span class="dashicons dashicons-yes"></span> <?php esc_html_e( 'Active', 'order-shield' ); ?></span><?php endif; ?>
+					</button>
+				<?php endforeach; ?>
+			</form>
+		</div>
+		<?php
 	}
 
 	/* ------------------------------------------------------------------ *
@@ -695,7 +833,7 @@ class OShield_Admin_Pages {
 	 * ------------------------------------------------------------------ */
 
 	/**
-	 * Settings page with tabs.
+	 * Settings page: side menu of tabs, each section in its own card.
 	 */
 	public static function settings() {
 		$schema = OShield_Settings::schema();
@@ -704,25 +842,54 @@ class OShield_Admin_Pages {
 			$tab = 'general';
 		}
 
-		self::header( __( 'Order Shield Settings', 'order-shield' ) );
+		self::header( __( 'Settings', 'order-shield' ) );
 		if ( isset( $_GET['updated'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			self::notice( __( 'Settings saved.', 'order-shield' ) );
 		}
 		if ( isset( $_GET['oshield_msg'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			self::notice( esc_html( sanitize_text_field( wp_unslash( $_GET['oshield_msg'] ) ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		}
+		self::preset_notice();
 
-		echo '<nav class="nav-tab-wrapper wp-clearfix" aria-label="' . esc_attr__( 'Settings sections', 'order-shield' ) . '">';
-		foreach ( $schema as $id => $t ) {
-			printf( '<a href="%s" class="nav-tab%s">%s</a>', esc_url( admin_url( 'admin.php?page=order-shield-settings&tab=' . $id ) ), $tab === $id ? ' nav-tab-active' : '', esc_html( $t['label'] ) );
+		$tabs          = $schema;
+		$tabs['tools'] = array(
+			'label' => __( 'Tools', 'order-shield' ),
+			'icon'  => 'dashicons-admin-tools',
+			'intro' => __( 'Import and export your block list and settings, and keep the database healthy.', 'order-shield' ),
+		);
+
+		echo '<div class="oshield-settings-layout">';
+
+		// Side menu.
+		echo '<nav class="oshield-sidenav" aria-label="' . esc_attr__( 'Settings sections', 'order-shield' ) . '">';
+		foreach ( $tabs as $id => $t ) {
+			$is = $tab === $id;
+			printf(
+				'<a href="%1$s" class="%2$s"%3$s><span class="dashicons %4$s"></span><span>%5$s</span></a>',
+				esc_url( admin_url( 'admin.php?page=order-shield-settings&tab=' . $id ) ),
+				$is ? 'is-current' : '',
+				$is ? ' aria-current="page"' : '',
+				esc_attr( ! empty( $t['icon'] ) ? $t['icon'] : 'dashicons-admin-generic' ),
+				esc_html( $t['label'] )
+			);
 		}
-		printf( '<a href="%s" class="nav-tab%s">%s</a>', esc_url( admin_url( 'admin.php?page=order-shield-settings&tab=tools' ) ), 'tools' === $tab ? ' nav-tab-active' : '', esc_html__( 'Tools', 'order-shield' ) );
 		echo '</nav>';
+
+		echo '<div class="oshield-settings-main">';
+		echo '<div class="oshield-tab-head"><span class="oshield-tab-icon dashicons ' . esc_attr( ! empty( $tabs[ $tab ]['icon'] ) ? $tabs[ $tab ]['icon'] : 'dashicons-admin-generic' ) . '"></span><div><h2>' . esc_html( $tabs[ $tab ]['label'] ) . '</h2>';
+		if ( ! empty( $tabs[ $tab ]['intro'] ) ) {
+			echo '<p>' . esc_html( $tabs[ $tab ]['intro'] ) . '</p>';
+		}
+		echo '</div></div>';
 
 		if ( 'tools' === $tab ) {
 			self::tools_tab();
-			echo '</div>';
+			echo '</div></div></div>';
 			return;
+		}
+
+		if ( ! empty( $schema[ $tab ]['presets'] ) ) {
+			self::preset_box( 'settings' );
 		}
 
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="oshield-settings">';
@@ -731,22 +898,70 @@ class OShield_Admin_Pages {
 		wp_nonce_field( 'oshield_settings' );
 
 		foreach ( $schema[ $tab ]['sections'] as $section ) {
-			echo '<h2 class="title">' . esc_html( $section['title'] ) . '</h2>';
+			$master = null;
+			$rest   = array();
+			foreach ( $section['fields'] as $field ) {
+				if ( ! empty( $field['master'] ) && null === $master ) {
+					$master = $field;
+				} else {
+					$rest[] = $field;
+				}
+			}
+			$off = $master && '1' !== (string) OShield_Settings::get( $master['id'] );
+
+			echo '<section class="oshield-section-card' . ( $master ? ' has-master' : '' ) . ( $off ? ' is-off' : '' ) . '">';
+			echo '<header class="oshield-section-head"><div><h3>' . esc_html( $section['title'] ) . '</h3>';
 			if ( ! empty( $section['desc'] ) ) {
 				echo '<p>' . esc_html( $section['desc'] ) . '</p>';
+			} elseif ( $master && ! empty( $master['desc'] ) ) {
+				echo '<p>' . esc_html( $master['desc'] ) . '</p>';
 			}
-			echo '<table class="form-table" role="presentation"><tbody>';
-			foreach ( $section['fields'] as $field ) {
-				self::field_row( $field );
+			echo '</div>';
+			if ( $master ) {
+				echo self::switch_html( $master, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
-			echo '</tbody></table>';
+			echo '</header>';
+
+			if ( $rest ) {
+				echo '<div class="oshield-section-body">';
+				foreach ( $rest as $field ) {
+					self::field_row( $field );
+				}
+				echo '</div>';
+				if ( $master ) {
+					echo '<p class="oshield-off-note">' . esc_html__( 'Turned off. Switch it on to see the options.', 'order-shield' ) . '</p>';
+				}
+			}
+			echo '</section>';
 		}
-		submit_button();
-		echo '</form></div>';
+
+		echo '<div class="oshield-savebar"><span class="oshield-unsaved" hidden><span class="dashicons dashicons-edit"></span> ' . esc_html__( 'You have unsaved changes', 'order-shield' ) . '</span>';
+		submit_button( __( 'Save Changes', 'order-shield' ), 'primary large', 'submit', false );
+		echo '</div>';
+		echo '</form></div></div></div>';
 	}
 
 	/**
-	 * One settings row.
+	 * On/off switch for a checkbox field.
+	 *
+	 * @param array $f      Field.
+	 * @param bool  $master Whether it switches a whole section.
+	 * @return string
+	 */
+	private static function switch_html( $f, $master = false ) {
+		$id    = 'oshield-' . $f['id'];
+		$value = OShield_Settings::get( $f['id'] );
+		$label = $master ? __( 'Enable', 'order-shield' ) : $f['label'];
+		return '<label class="oshield-switch' . ( $master ? ' oshield-master' : '' ) . '" for="' . esc_attr( $id ) . '">'
+			. '<input type="checkbox" id="' . esc_attr( $id ) . '" name="' . esc_attr( 'oshield[' . $f['id'] . ']' ) . '" value="1" ' . checked( '1', (string) $value, false ) . '>'
+			. '<span class="oshield-slider" aria-hidden="true"></span>'
+			. '<span class="screen-reader-text">' . esc_html( $f['label'] ) . '</span>'
+			. ( $master ? '<span class="oshield-switch-state" data-on="' . esc_attr__( 'On', 'order-shield' ) . '" data-off="' . esc_attr__( 'Off', 'order-shield' ) . '"></span>' : '' )
+			. '</label>';
+	}
+
+	/**
+	 * One settings field.
 	 *
 	 * @param array $f Field.
 	 */
@@ -755,24 +970,38 @@ class OShield_Admin_Pages {
 		$name  = 'oshield[' . $id . ']';
 		$value = OShield_Settings::get( $id );
 		$html  = 'oshield-' . $id;
-		$attrs = ! empty( $f['show_if'] ) ? ' data-show-if="' . esc_attr( $f['show_if'] ) . '"' : '';
+		$attrs = ' data-field="' . esc_attr( $id ) . '"';
+		if ( ! empty( $f['show_if'] ) ) {
+			$attrs .= ' data-show-if="' . esc_attr( $f['show_if'] ) . '"';
+		}
+		if ( ! empty( $f['warn'] ) ) {
+			$attrs .= ' data-warn-op="' . esc_attr( $f['warn'][0] ) . '" data-warn-value="' . esc_attr( $f['warn'][1] ) . '"';
+		}
 
-		echo '<tr' . $attrs . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		// Checkbox: label on the left, switch on the right.
 		if ( 'checkbox' === $f['type'] ) {
-			echo '<th scope="row">' . esc_html( $f['label'] ) . '</th><td>';
-			echo '<label for="' . esc_attr( $html ) . '"><input type="checkbox" id="' . esc_attr( $html ) . '" name="' . esc_attr( $name ) . '" value="1" ' . checked( '1', (string) $value, false ) . '> ';
-			echo ! empty( $f['desc'] ) ? esc_html( $f['desc'] ) : esc_html__( 'Enable', 'order-shield' );
-			echo '</label></td></tr>';
+			echo '<div class="oshield-field oshield-field-checkbox"' . $attrs . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			echo '<div class="oshield-field-label"><label for="' . esc_attr( $html ) . '">' . esc_html( $f['label'] ) . '</label>';
+			if ( ! empty( $f['desc'] ) ) {
+				echo '<p class="description">' . esc_html( $f['desc'] ) . '</p>';
+			}
+			echo '</div><div class="oshield-field-control">' . self::switch_html( $f ) . '</div></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			return;
 		}
 
-		echo '<th scope="row"><label for="' . esc_attr( $html ) . '">' . esc_html( $f['label'] ) . '</label></th><td>';
+		$wide = in_array( $f['type'], array( 'textarea', 'statuses', 'webhook', 'apikey' ), true ) || ( ! empty( $f['class'] ) && false !== strpos( $f['class'], 'large-text' ) );
+		echo '<div class="oshield-field oshield-field-' . esc_attr( $f['type'] ) . ( $wide ? ' is-wide' : '' ) . '"' . $attrs . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo '<div class="oshield-field-label"><label for="' . esc_attr( $html ) . '">' . esc_html( $f['label'] ) . '</label>';
+		if ( ! empty( $f['desc'] ) ) {
+			echo '<p class="description">' . esc_html( $f['desc'] ) . '</p>';
+		}
+		echo '</div><div class="oshield-field-control">';
 		$class = ! empty( $f['class'] ) ? $f['class'] : 'regular-text';
 
 		switch ( $f['type'] ) {
 			case 'number':
 				printf(
-					'<input type="number" id="%1$s" name="%2$s" value="%3$s" class="small-text"%4$s%5$s>',
+					'<input type="number" id="%1$s" name="%2$s" value="%3$s" class="small-text oshield-input"%4$s%5$s>',
 					esc_attr( $html ),
 					esc_attr( $name ),
 					esc_attr( $value ),
@@ -782,7 +1011,7 @@ class OShield_Admin_Pages {
 				break;
 
 			case 'select':
-				echo '<select id="' . esc_attr( $html ) . '" name="' . esc_attr( $name ) . '" data-oshield-key="' . esc_attr( $id ) . '">';
+				echo '<select id="' . esc_attr( $html ) . '" name="' . esc_attr( $name ) . '" data-oshield-key="' . esc_attr( $id ) . '" class="oshield-input">';
 				foreach ( $f['options'] as $k => $label ) {
 					echo '<option value="' . esc_attr( $k ) . '" ' . selected( (string) $value, (string) $k, false ) . '>' . esc_html( $label ) . '</option>';
 				}
@@ -791,12 +1020,15 @@ class OShield_Admin_Pages {
 
 			case 'textarea':
 				$tclass = ! empty( $f['class'] ) ? $f['class'] : 'large-text';
-				echo '<textarea id="' . esc_attr( $html ) . '" name="' . esc_attr( $name ) . '" rows="3" class="' . esc_attr( $tclass ) . '">' . esc_textarea( $value ) . '</textarea>';
+				echo '<textarea id="' . esc_attr( $html ) . '" name="' . esc_attr( $name ) . '" rows="3" class="' . esc_attr( $tclass ) . ' oshield-input">' . esc_textarea( $value ) . '</textarea>';
 				break;
 
 			case 'password':
 				$has = '' !== (string) $value;
-				echo '<input type="password" id="' . esc_attr( $html ) . '" name="' . esc_attr( $name ) . '" value="" class="regular-text" autocomplete="new-password" placeholder="' . esc_attr( $has ? __( 'Saved — leave empty to keep', 'order-shield' ) : '' ) . '">';
+				echo '<input type="password" id="' . esc_attr( $html ) . '" name="' . esc_attr( $name ) . '" value="" class="regular-text oshield-input" autocomplete="new-password" placeholder="' . esc_attr( $has ? __( 'Saved — leave empty to keep', 'order-shield' ) : '' ) . '">';
+				if ( $has ) {
+					echo ' <span class="oshield-pill oshield-pill-good"><span class="dashicons dashicons-lock"></span> ' . esc_html__( 'Saved', 'order-shield' ) . '</span>';
+				}
 				break;
 
 			case 'statuses':
@@ -804,36 +1036,42 @@ class OShield_Admin_Pages {
 				echo '<fieldset class="oshield-checklist">';
 				echo '<input type="hidden" name="' . esc_attr( $name ) . '[]" value="">';
 				foreach ( $statuses as $k => $label ) {
-					echo '<label><input type="checkbox" name="' . esc_attr( $name ) . '[]" value="' . esc_attr( $k ) . '" ' . checked( in_array( $k, (array) $value, true ), true, false ) . '> ' . esc_html( $label ) . '</label>';
+					echo '<label class="oshield-chip-check"><input type="checkbox" name="' . esc_attr( $name ) . '[]" value="' . esc_attr( $k ) . '" ' . checked( in_array( $k, (array) $value, true ), true, false ) . '> <span>' . esc_html( $label ) . '</span></label>';
 				}
 				echo '</fieldset>';
 				break;
 
 			case 'apikey':
-				echo '<input type="text" id="' . esc_attr( $html ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" class="regular-text code" readonly> ';
+				echo '<div class="oshield-inline-form"><input type="text" id="' . esc_attr( $html ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" class="regular-text code oshield-input" readonly placeholder="' . esc_attr__( 'Disabled — no key', 'order-shield' ) . '"> ';
 				echo '<button type="button" class="button oshield-gen-key" data-target="' . esc_attr( $html ) . '">' . esc_html__( 'Generate new key', 'order-shield' ) . '</button> ';
-				echo '<button type="button" class="button-link oshield-clear-key" data-target="' . esc_attr( $html ) . '">' . esc_html__( 'Disable', 'order-shield' ) . '</button>';
+				echo '<button type="button" class="button-link oshield-clear-key" data-target="' . esc_attr( $html ) . '">' . esc_html__( 'Disable', 'order-shield' ) . '</button></div>';
 				echo '<p class="description"><code>' . esc_html( rest_url( OShield_REST::NS . '/orders?phone=01XXXXXXXXX' ) ) . '</code></p>';
 				break;
 
 			case 'webhook':
 				$courier = $f['courier'];
-				echo '<p><strong>' . esc_html__( 'URL:', 'order-shield' ) . '</strong> <input type="text" readonly class="large-text code oshield-copy" value="' . esc_attr( OShield_REST::webhook_url( $courier ) ) . '"></p>';
-				echo '<p><strong>' . esc_html( 'steadfast' === $courier ? __( 'Auth token:', 'order-shield' ) : __( 'Webhook secret:', 'order-shield' ) ) . '</strong> ';
-				echo '<input type="text" id="' . esc_attr( $html ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" class="regular-text code"> ';
-				echo '<button type="button" class="button oshield-gen-key" data-target="' . esc_attr( $html ) . '">' . esc_html__( 'Generate', 'order-shield' ) . '</button></p>';
+				echo '<div class="oshield-copy-row"><span>' . esc_html__( 'URL', 'order-shield' ) . '</span><input type="text" readonly class="large-text code oshield-copy" value="' . esc_attr( OShield_REST::webhook_url( $courier ) ) . '"><button type="button" class="button oshield-copy-btn">' . esc_html__( 'Copy', 'order-shield' ) . '</button></div>';
+				echo '<div class="oshield-copy-row"><span>' . esc_html( 'steadfast' === $courier ? __( 'Auth token', 'order-shield' ) : __( 'Webhook secret', 'order-shield' ) ) . '</span>';
+				echo '<input type="text" id="' . esc_attr( $html ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" class="regular-text code oshield-input oshield-copy">';
+				echo '<button type="button" class="button oshield-gen-key" data-target="' . esc_attr( $html ) . '">' . esc_html__( 'Generate', 'order-shield' ) . '</button></div>';
 				break;
 
 			default:
-				echo '<input type="text" id="' . esc_attr( $html ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" class="' . esc_attr( $class ) . '"' . ( ! empty( $f['placeholder'] ) ? ' placeholder="' . esc_attr( $f['placeholder'] ) . '"' : '' ) . '>';
+				echo '<input type="text" id="' . esc_attr( $html ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" class="' . esc_attr( $class ) . ' oshield-input"' . ( ! empty( $f['placeholder'] ) ? ' placeholder="' . esc_attr( $f['placeholder'] ) . '"' : '' ) . '>';
 		}
 
-		if ( ! empty( $f['desc'] ) && ! in_array( $f['type'], array( 'apikey' ), true ) ) {
-			echo '<p class="description">' . esc_html( $f['desc'] ) . '</p>';
-		} elseif ( 'apikey' === $f['type'] && ! empty( $f['desc'] ) ) {
-			echo '<p class="description">' . esc_html( $f['desc'] ) . '</p>';
+		// Recommended value chip.
+		if ( isset( $f['recommend'] ) && '' !== (string) $f['recommend'] ) {
+			$shown = 'select' === $f['type'] && isset( $f['options'][ $f['recommend'] ] ) ? $f['options'][ $f['recommend'] ] : $f['recommend'];
+			echo '<button type="button" class="oshield-rec" data-target="' . esc_attr( $html ) . '" data-value="' . esc_attr( $f['recommend'] ) . '" title="' . esc_attr__( 'Click to use this value', 'order-shield' ) . '"><span class="dashicons dashicons-star-filled"></span> ' . esc_html__( 'Recommended:', 'order-shield' ) . ' <strong>' . esc_html( $shown ) . '</strong></button>';
 		}
-		echo '</td></tr>';
+
+		// Live warning.
+		if ( ! empty( $f['warn'] ) ) {
+			echo '<p class="oshield-warn" hidden><span class="dashicons dashicons-warning"></span> ' . esc_html( $f['warn'][2] ) . '</p>';
+		}
+
+		echo '</div></div>';
 	}
 
 	/**
@@ -845,72 +1083,61 @@ class OShield_Admin_Pages {
 			return esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=oshield_tools&do=' . $do ), 'oshield_tools' ) );
 		};
 		?>
-		<h2 class="title"><?php esc_html_e( 'Block list', 'order-shield' ); ?></h2>
-		<table class="form-table" role="presentation">
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Export', 'order-shield' ); ?></th>
-				<td><a class="button" href="<?php echo $link( 'export_blocks' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>"><?php esc_html_e( 'Download CSV', 'order-shield' ); ?></a></td>
-			</tr>
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Import', 'order-shield' ); ?></th>
-				<td>
-					<form method="post" action="<?php echo $post; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>" enctype="multipart/form-data" class="oshield-inline-form">
+		<div class="oshield-tools-grid">
+			<section class="oshield-section-card">
+				<header class="oshield-section-head"><div><h3><span class="dashicons dashicons-dismiss"></span> <?php esc_html_e( 'Block list', 'order-shield' ); ?></h3>
+					<p><?php esc_html_e( 'CSV columns: type, value, reason (type = phone, ip, device or email). A file with one phone number per line also works.', 'order-shield' ); ?></p></div></header>
+				<div class="oshield-section-body">
+					<p><a class="button" href="<?php echo $link( 'export_blocks' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>"><span class="dashicons dashicons-download"></span> <?php esc_html_e( 'Download CSV', 'order-shield' ); ?></a></p>
+					<form method="post" action="<?php echo $post; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>" enctype="multipart/form-data" class="oshield-inline-form oshield-upload">
 						<input type="hidden" name="action" value="oshield_tools">
 						<input type="hidden" name="do" value="import_blocks">
 						<?php wp_nonce_field( 'oshield_tools' ); ?>
 						<input type="file" name="file" accept=".csv,text/csv,text/plain" required>
 						<?php submit_button( __( 'Import', 'order-shield' ), 'secondary', 'submit', false ); ?>
 					</form>
-					<p class="description"><?php esc_html_e( 'CSV columns: type, value, reason (type = phone, ip, device or email). A file with one phone number per line also works.', 'order-shield' ); ?></p>
-				</td>
-			</tr>
-		</table>
+				</div>
+			</section>
 
-		<h2 class="title"><?php esc_html_e( 'Settings backup', 'order-shield' ); ?></h2>
-		<table class="form-table" role="presentation">
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Export', 'order-shield' ); ?></th>
-				<td><a class="button" href="<?php echo $link( 'export_settings' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>"><?php esc_html_e( 'Download settings', 'order-shield' ); ?></a>
-				<p class="description"><?php esc_html_e( 'Includes API keys — keep the file private.', 'order-shield' ); ?></p></td>
-			</tr>
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Import', 'order-shield' ); ?></th>
-				<td>
-					<form method="post" action="<?php echo $post; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>" enctype="multipart/form-data" class="oshield-inline-form">
+			<section class="oshield-section-card">
+				<header class="oshield-section-head"><div><h3><span class="dashicons dashicons-backup"></span> <?php esc_html_e( 'Settings backup', 'order-shield' ); ?></h3>
+					<p><?php esc_html_e( 'Includes API keys — keep the file private.', 'order-shield' ); ?></p></div></header>
+				<div class="oshield-section-body">
+					<p><a class="button" href="<?php echo $link( 'export_settings' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>"><span class="dashicons dashicons-download"></span> <?php esc_html_e( 'Download settings', 'order-shield' ); ?></a></p>
+					<form method="post" action="<?php echo $post; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>" enctype="multipart/form-data" class="oshield-inline-form oshield-upload">
 						<input type="hidden" name="action" value="oshield_tools">
 						<input type="hidden" name="do" value="import_settings">
 						<?php wp_nonce_field( 'oshield_tools' ); ?>
 						<input type="file" name="file" accept=".json,application/json" required>
 						<?php submit_button( __( 'Import', 'order-shield' ), 'secondary', 'submit', false ); ?>
 					</form>
-				</td>
-			</tr>
-		</table>
+				</div>
+			</section>
 
-		<h2 class="title"><?php esc_html_e( 'Maintenance', 'order-shield' ); ?></h2>
-		<table class="form-table" role="presentation">
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Database', 'order-shield' ); ?></th>
-				<td>
+			<section class="oshield-section-card">
+				<header class="oshield-section-head"><div><h3><span class="dashicons dashicons-database"></span> <?php esc_html_e( 'Database', 'order-shield' ); ?></h3>
+					<p><?php esc_html_e( 'Green means the table exists and works.', 'order-shield' ); ?></p></div></header>
+				<div class="oshield-section-body">
 					<ul class="oshield-health">
-					<?php
-					foreach ( OShield_Install::health() as $table => $ok ) {
-						echo '<li><span class="dashicons ' . ( $ok ? 'dashicons-yes-alt oshield-ok' : 'dashicons-warning oshield-bad' ) . '"></span> <code>' . esc_html( $table ) . '</code></li>';
-					}
-					?>
+						<?php
+						foreach ( OShield_Install::health() as $table => $ok ) {
+							echo '<li><span class="dashicons ' . ( $ok ? 'dashicons-yes-alt oshield-ok' : 'dashicons-warning oshield-bad' ) . '"></span> <code>' . esc_html( $table ) . '</code></li>';
+						}
+						?>
 					</ul>
-					<a class="button" href="<?php echo $link( 'repair' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>"><?php esc_html_e( 'Check & repair tables', 'order-shield' ); ?></a>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Cache', 'order-shield' ); ?></th>
-				<td><a class="button" href="<?php echo $link( 'clear_cache' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>"><?php esc_html_e( 'Clear fraud check & courier caches', 'order-shield' ); ?></a></td>
-			</tr>
-			<tr>
-				<th scope="row"><?php esc_html_e( 'Version', 'order-shield' ); ?></th>
-				<td><?php echo esc_html( OSHIELD_VERSION ); ?></td>
-			</tr>
-		</table>
+					<p><a class="button" href="<?php echo $link( 'repair' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>"><?php esc_html_e( 'Check & repair tables', 'order-shield' ); ?></a></p>
+				</div>
+			</section>
+
+			<section class="oshield-section-card">
+				<header class="oshield-section-head"><div><h3><span class="dashicons dashicons-performance"></span> <?php esc_html_e( 'Cache', 'order-shield' ); ?></h3>
+					<p><?php esc_html_e( 'Clear saved fraud check and courier results so they are fetched fresh.', 'order-shield' ); ?></p></div></header>
+				<div class="oshield-section-body">
+					<p><a class="button" href="<?php echo $link( 'clear_cache' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>"><?php esc_html_e( 'Clear fraud check & courier caches', 'order-shield' ); ?></a></p>
+					<p class="oshield-muted"><?php echo esc_html( sprintf( /* translators: %s version */ __( 'Order Shield version %s', 'order-shield' ), OSHIELD_VERSION ) ); ?></p>
+				</div>
+			</section>
+		</div>
 		<?php
 	}
 }

@@ -33,6 +33,7 @@ class OShield_Admin {
 
 		add_action( 'admin_post_oshield_save_settings', array( __CLASS__, 'save_settings' ) );
 		add_action( 'admin_post_oshield_tools', array( __CLASS__, 'tools' ) );
+		add_action( 'admin_post_oshield_preset', array( __CLASS__, 'apply_preset' ) );
 		add_action( 'admin_post_oshield_block_add', array( __CLASS__, 'block_add' ) );
 
 		$ajax = array( 'report', 'block_toggle', 'send_courier', 'refresh_courier', 'replay', 'live', 'journey', 'live_events' );
@@ -127,6 +128,12 @@ class OShield_Admin {
 					'liveWaiting'  => __( 'Connecting to the visitor… the screen appears when they move or the next update arrives (up to 25 seconds).', 'order-shield' ),
 					'liveNow'      => __( 'LIVE', 'order-shield' ),
 					'liveOffline'  => __( 'Visitor left the site', 'order-shield' ),
+					'recommended'  => __( 'Recommended:', 'order-shield' ),
+					'useThis'      => __( 'Click to use this value', 'order-shield' ),
+					'unsaved'      => __( 'You have unsaved changes', 'order-shield' ),
+					'leavePage'    => __( 'You have unsaved changes. Leave this page?', 'order-shield' ),
+					'copied'       => __( 'Copied', 'order-shield' ),
+					'confirmPreset' => __( 'Apply the "%s" protection level? Your checkout protection settings will change.', 'order-shield' ),
 				),
 			)
 		);
@@ -178,6 +185,21 @@ class OShield_Admin {
 		$values = isset( $_POST['oshield'] ) && is_array( $_POST['oshield'] ) ? $_POST['oshield'] : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized per field.
 		OShield_Settings::save_tab( $tab, $values );
 		wp_safe_redirect( admin_url( 'admin.php?page=order-shield-settings&tab=' . $tab . '&updated=1' ) );
+		exit;
+	}
+
+	/**
+	 * Apply a protection level preset.
+	 */
+	public static function apply_preset() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Sorry, you are not allowed to do that.', 'order-shield' ) );
+		}
+		check_admin_referer( 'oshield_preset' );
+		$id   = isset( $_POST['preset'] ) ? sanitize_key( $_POST['preset'] ) : '';
+		$back = isset( $_POST['back'] ) && 'dashboard' === $_POST['back'] ? admin_url( 'admin.php?page=order-shield' ) : admin_url( 'admin.php?page=order-shield-settings&tab=checkout' );
+		$ok   = OShield_Settings::apply_preset( $id );
+		wp_safe_redirect( add_query_arg( 'oshield_preset', $ok ? $id : 'error', $back ) );
 		exit;
 	}
 

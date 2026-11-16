@@ -6,7 +6,7 @@ Tested up to: 6.8
 Requires PHP: 7.4
 WC requires at least: 6.0
 WC tested up to: 10.2
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -47,6 +47,14 @@ Order Shield only contacts outside services you switch on:
 Session replay uses rrweb (MIT License), bundled in assets/vendor/rrweb.
 
 == Changelog ==
+
+= 1.3.0 =
+* New design for all Order Shield pages: top navigation bar, coloured stat cards, card-based panels.
+* Dashboard: protection score, "needs attention" box for risky settings, grouped protection status.
+* Settings: side menu, one card per section, on/off switches, options hide when a feature is off.
+* Settings: "Recommended" value chips (one click), live warnings for risky values, unsaved-changes bar.
+* New: protection levels (Light / Balanced / Strict) to set all checkout rules in one click.
+* No change to checkout, fraud, courier or database logic.
 
 = 1.2.0 =
 * New: watch a visitor's screen live from Live Visitors (updates about every second).

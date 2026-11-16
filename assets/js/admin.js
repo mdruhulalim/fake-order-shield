@@ -300,15 +300,102 @@
 	});
 
 	/* ---------- Settings ---------- */
+	function fieldInput($field) {
+		return $field.find('.oshield-field-control').find('input:not([type=hidden]):not([type=checkbox]), select, textarea').first();
+	}
+
+	// Show/hide fields that depend on a select: "key=value" or "key!=value".
 	function applyShowIf() {
 		$('[data-show-if]').each(function () {
-			var parts = String($(this).data('show-if')).split('=');
+			var rule = String($(this).data('show-if'));
+			var neg = rule.indexOf('!=') > -1;
+			var parts = rule.split(neg ? '!=' : '=');
 			var val = $('[data-oshield-key="' + parts[0] + '"]').val();
-			$(this).toggle(val === parts[1]);
+			$(this).toggle(neg ? val !== parts[1] : val === parts[1]);
 		});
 	}
 	$(document).on('change', 'select[data-oshield-key]', applyShowIf);
-	$(applyShowIf);
+
+	// Master switch: hide the section's options while it is off.
+	$(document).on('change', '.oshield-master input', function () {
+		$(this).closest('.oshield-section-card').toggleClass('is-off', !this.checked);
+	});
+
+	// Live warnings for risky values.
+	function checkWarn($field) {
+		var op = String($field.data('warn-op') || '');
+		if (!op) { return; }
+		var raw = String(fieldInput($field).val() || '').trim();
+		var limit = parseFloat($field.data('warn-value'));
+		var n = parseFloat(raw);
+		var bad = false;
+		if (op === 'empty') { bad = raw === ''; }
+		else if (raw !== '' && !isNaN(n)) {
+			bad = (op === '>' && n > limit) || (op === '<' && n < limit) || (op === '==' && n === limit);
+		}
+		$field.toggleClass('has-warning', bad).find('.oshield-warn').prop('hidden', !bad);
+	}
+
+	// "Recommended" chip shows a tick when the value already matches.
+	function checkRec($field) {
+		var $rec = $field.find('.oshield-rec');
+		if (!$rec.length) { return; }
+		var v = String(fieldInput($field).val() || '').trim();
+		$rec.toggleClass('is-match', v === String($rec.data('value')));
+	}
+
+	function checkField($field) { checkWarn($field); checkRec($field); }
+
+	$(document).on('input change', '.oshield-field .oshield-input', function () {
+		checkField($(this).closest('.oshield-field'));
+	});
+
+	$(document).on('click', '.oshield-rec', function (e) {
+		e.preventDefault();
+		var $t = $('#' + $(this).data('target'));
+		$t.val(String($(this).data('value'))).trigger('change');
+		$t.closest('.oshield-field').addClass('is-changed');
+	});
+
+	// Unsaved changes indicator.
+	var dirty = false;
+	$(document).on('input change', 'form.oshield-settings :input', function () {
+		if (!dirty) { dirty = true; $('.oshield-unsaved').prop('hidden', false); }
+	});
+	$(document).on('submit', 'form.oshield-settings', function () { dirty = false; });
+	window.addEventListener('beforeunload', function (e) {
+		if (dirty) { e.preventDefault(); e.returnValue = A.i18n.leavePage || ''; return e.returnValue; }
+	});
+
+	// Protection level presets.
+	$(document).on('click', '.oshield-preset', function (e) {
+		if ($(this).hasClass('is-active')) { e.preventDefault(); return; }
+		var msg = (A.i18n.confirmPreset || '%s').replace('%s', $(this).data('label'));
+		if (!window.confirm(msg)) { e.preventDefault(); return; }
+		dirty = false;
+	});
+
+	// Copy buttons (webhook URL etc.).
+	$(document).on('click', '.oshield-copy-btn', function () {
+		var $b = $(this), input = $b.siblings('input')[0];
+		if (!input) { return; }
+		input.select();
+		var done = function () {
+			var old = $b.data('old') || $b.text();
+			$b.data('old', old).text(A.i18n.copied || 'Copied');
+			setTimeout(function () { $b.text(old); }, 1500);
+		};
+		if (navigator.clipboard && window.isSecureContext) {
+			navigator.clipboard.writeText(input.value).then(done);
+		} else {
+			try { document.execCommand('copy'); done(); } catch (err) { /* ignore */ }
+		}
+	});
+
+	$(function () {
+		applyShowIf();
+		$('.oshield-field').each(function () { checkField($(this)); });
+	});
 
 	$(document).on('click', '.oshield-gen-key', function () {
 		var chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', out = '';
@@ -318,7 +405,7 @@
 		$('#' + $(this).data('target')).val(out).trigger('change');
 	});
 	$(document).on('click', '.oshield-clear-key', function () {
-		$('#' + $(this).data('target')).val('');
+		$('#' + $(this).data('target')).val('').trigger('change');
 	});
 	$(document).on('focus click', '.oshield-copy', function () { this.select(); });
 
